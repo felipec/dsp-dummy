@@ -24,7 +24,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <signal.h>
-#include <unistd.h> /* for usleep */
 
 #include <dbapi.h>
 
@@ -41,12 +40,6 @@ typedef struct
     DSP_HPROCESSOR processor;
     DSP_HNODE node;
 } Core;
-
-static void inline
-kill_time (void)
-{
-    usleep (4000);
-}
 
 static void
 signal_handler (int signal)
@@ -129,8 +122,7 @@ run_task (Core *core)
         msg.dwCmd = 1;
         msg.dwArg1 = input_buffer->size;
         DSPNode_PutMessage (core->node, &msg, DSP_FOREVER);
-        kill_time ();
-        DSPNode_GetMessage (core->node, &msg, 0);
+        DSPNode_GetMessage (core->node, &msg, DSP_FOREVER);
         dmm_buffer_invalidate (output_buffer);
     }
 
