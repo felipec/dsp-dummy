@@ -27,8 +27,6 @@
 #include <dbapi.h>
 
 #define DMM_PAGE_SIZE 4096
-#define ROUND_TO_PAGESIZE(n) ((((n) + 4095) / DMM_PAGE_SIZE) * DMM_PAGE_SIZE)
-
 #define ARM_BUFFER_ALIGNMENT 128
 #define ROUND_UP(num, scale) (((num) + ((scale) - 1)) & ~((scale) - 1))
 
@@ -57,7 +55,7 @@ dmm_buffer_map (DmmBuffer *buffer)
     printf ("%s: %p\n", __func__, buffer);
 #endif
     unsigned int to_reserve;
-    to_reserve = ROUND_TO_PAGESIZE (buffer->size) + (2 * DMM_PAGE_SIZE);
+    to_reserve = ROUND_UP (buffer->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
     DSPProcessor_ReserveMemory (buffer->handle, to_reserve, &buffer->reserve);
     DSPProcessor_Map (buffer->handle, buffer->data, buffer->size,
                       buffer->reserve, &buffer->map, 0);
