@@ -71,7 +71,7 @@ create_node (Core *core)
         if (DSP_FAILED (status))
             fprintf (stdout, "DSPNode_Create failed: 0x%lx\n", status);
         else
-            fprintf (stdout,"DSPNodeCreate succeeded\n");
+            fprintf (stdout, "DSPNodeCreate succeeded\n");
     }
 
     return DSP_SUCCEEDED (status) ? true : false;
