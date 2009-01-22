@@ -71,7 +71,8 @@ create_node (Core *core)
 }
 
 static bool
-run_task (Core *core)
+run_task (Core *core,
+          unsigned long times)
 {
     DSP_STATUS status;
     DSP_STATUS exit_status;
@@ -104,6 +105,8 @@ run_task (Core *core)
     dmm_buffer_flush (input_buffer);
     dmm_buffer_flush (output_buffer);
 
+    fprintf (stdout, "running %lu times\n", times);
+
     while (!done)
     {
         struct DSP_MSG msg;
@@ -124,6 +127,9 @@ run_task (Core *core)
         DSPNode_PutMessage (core->node, &msg, DSP_FOREVER);
         DSPNode_GetMessage (core->node, &msg, DSP_FOREVER);
         dmm_buffer_invalidate (output_buffer);
+
+        if (--times == 0)
+            break;
     }
 
     dmm_buffer_free (output_buffer);
@@ -175,7 +181,7 @@ main (int argc,
             /* node level initialization. */
             if (create_node (&core))
             {
-                run_task (&core);
+                run_task (&core, 24 * 60 * 10);
             }
         }
         else
