@@ -40,8 +40,7 @@ dmm_buffer_free (DmmBuffer *buffer)
 #ifdef DEBUG
     printf ("%s: %p\n", __func__, buffer);
 #endif
-    DSPProcessor_UnMap (buffer->handle, buffer->map);
-    DSPProcessor_UnReserveMemory (buffer->handle, buffer->reserve);
+    dmm_buffer_unmap (buffer);
     free (buffer->allocated_data);
     free (buffer);
 }

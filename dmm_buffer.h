@@ -59,6 +59,16 @@ dmm_buffer_map (DmmBuffer *buffer)
 }
 
 static inline void
+dmm_buffer_unmap (DmmBuffer *buffer)
+{
+#ifdef DEBUG
+    printf ("%s: %p\n", __func__, buffer);
+#endif
+    DSPProcessor_UnMap (buffer->handle, buffer->map);
+    DSPProcessor_UnReserveMemory (buffer->handle, buffer->reserve);
+}
+
+static inline void
 dmm_buffer_flush (DmmBuffer *buffer)
 {
 #ifdef DEBUG
