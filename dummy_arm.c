@@ -70,6 +70,19 @@ create_node (Core *core)
     return DSP_SUCCEEDED (status) ? true : false;
 }
 
+static inline void
+configure_dsp_node (Core *core,
+                    DmmBuffer *input_buffer,
+                    DmmBuffer *output_buffer)
+{
+    struct DSP_MSG msg;
+
+    msg.dwCmd = 0;
+    msg.dwArg1 = (unsigned long) input_buffer->map;
+    msg.dwArg2 = (unsigned long) output_buffer->map;
+    DSPNode_PutMessage (core->node, &msg, DSP_FOREVER);
+}
+
 static bool
 run_task (Core *core,
           unsigned long times)
@@ -88,22 +101,12 @@ run_task (Core *core,
         fprintf (stdout, "DSPNode_run succeeded\n");
 
     input_buffer = dmm_buffer_new (core->processor);
-    dmm_buffer_allocate (input_buffer, input_buffer_size);
-
     output_buffer = dmm_buffer_new (core->processor);
+
+    dmm_buffer_allocate (input_buffer, input_buffer_size);
     dmm_buffer_allocate (output_buffer, output_buffer_size);
 
-    {
-        struct DSP_MSG msg;
-
-        msg.dwCmd = 0;
-        msg.dwArg1 = (unsigned long) input_buffer->map;
-        msg.dwArg2 = (unsigned long) output_buffer->map;
-        DSPNode_PutMessage (core->node, &msg, DSP_FOREVER);
-    }
-
-    dmm_buffer_flush (input_buffer);
-    dmm_buffer_flush (output_buffer);
+    configure_dsp_node (core, input_buffer, output_buffer);
 
     fprintf (stdout, "running %lu times\n", times);
 
