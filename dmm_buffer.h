@@ -1,7 +1,9 @@
 /*
  * Copyright (C) 2008 Nokia Corporation.
  *
- * Author: Felipe Contreras <felipe.contreras@nokia.com>
+ * Authors:
+ * Felipe Contreras <felipe.contreras@nokia.com>
+ * Marco Ballesio <marco.ballesio@nokia.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +28,9 @@
 
 #define DMM_PAGE_SIZE 4096
 #define ROUND_TO_PAGESIZE(n) ((((n) + 4095) / DMM_PAGE_SIZE) * DMM_PAGE_SIZE)
+
+#define ARM_BUFFER_ALIGNMENT 128
+#define ROUND_UP(num, scale) (((num) + ((scale) - 1)) & ~((scale) - 1))
 
 typedef struct
 {

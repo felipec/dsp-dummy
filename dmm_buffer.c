@@ -1,7 +1,9 @@
 /*
  * Copyright (C) 2008 Nokia Corporation.
  *
- * Author: Felipe Contreras <felipe.contreras@nokia.com>
+ * Authors:
+ * Felipe Contreras <felipe.contreras@nokia.com>
+ * Marco Ballesio <marco.ballesio@nokia.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,7 +51,12 @@ void
 dmm_buffer_allocate (DmmBuffer *buffer,
                      unsigned int size)
 {
+#ifdef ARM_BUFFER_ALIGNMENT
+    buffer->allocated_data = malloc (size + 2 * ARM_BUFFER_ALIGNMENT);
+    buffer->data = (void *) ROUND_UP ((unsigned long) buffer->allocated_data, ARM_BUFFER_ALIGNMENT);
+#else
     buffer->data = buffer->allocated_data = malloc (size);
+#endif
     buffer->size = size;
     dmm_buffer_map (buffer);
 }
