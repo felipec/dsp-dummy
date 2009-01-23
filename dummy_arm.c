@@ -135,6 +135,9 @@ run_task (Core *core,
             break;
     }
 
+    dmm_buffer_unmap (output_buffer);
+    dmm_buffer_unmap (input_buffer);
+
     dmm_buffer_free (output_buffer);
     dmm_buffer_free (input_buffer);
 

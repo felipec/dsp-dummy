@@ -42,7 +42,6 @@ dmm_buffer_free (DmmBuffer *buffer)
 #ifdef DEBUG
     printf ("%s: %p\n", __func__, buffer);
 #endif
-    dmm_buffer_unmap (buffer);
     free (buffer->allocated_data);
     free (buffer);
 }
