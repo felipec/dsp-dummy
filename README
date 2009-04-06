@@ -1,0 +1,41 @@
+This is an example DSP node that is simply passing buffers back and forth.
+
+= Preparation =
+
+In order to develop dynamic dsp nodes you'll need a C6x compiler and doffbuild
+tools.
+
+== C6x compiler ==
+
+Apparently the only version of the C6x compiler that works is v6.0.16:
+https://www-a.ti.com/downloads/sds_support/targetcontent/LinuxDspTools/download.html
+
+== doffbuild ==
+
+The only relevant tool is DLLcreate, which can be found in TI's omapzoom site,
+on the dspbridge_dsp package.
+
+ mkdir -p tmp
+ tar -xf dspbridge_dsp.tar.gz -C tmp
+ mv tmp/dsp/bdsptools/packages/ti/dspbridge/dsp/doffbuild /opt/doffbuild
+ rm -rf tmp
+
+= libdspbridge =
+
+This library is used by the user-space applications.
+
+ git clone git://github.com/felipec/libdspbridge.git
+ cd libdspbridge
+ make DESTDIR=$rootfs install
+
+= Build =
+
+ make DSP_TOOLS=/opt/dsptools DSP_DOFFBUILD=/opt/doffbuild BRIDGE_DIR=../libdspbridge
+
+As a result you'll have two binaries; 'dummy.dll64P' for dsp-side, and 'dummy' for arm-side.
+
+To load the dynamic node:
+
+/dspbridge/dynreg.out -r /lib/dsp/dummy.dll64P
+
+Now you can run the dummy test application.
