@@ -7,8 +7,10 @@ tools.
 
 == C6x compiler ==
 
-Apparently the only version of the C6x compiler that works is v6.0.16:
+Download from:
 https://www-a.ti.com/downloads/sds_support/targetcontent/LinuxDspTools/download.html
+
+Install to '/opt/dsptools'
 
 == doffbuild ==
 
