@@ -57,7 +57,7 @@ endif
 
 %.x64P::
 	$(P)LNK6X
-	$(Q)$(LNK6X) -r -cr -o $@ $+
+	$(Q)$(LNK6X) -r -cr --localize='$$bss' -o $@ $+
 
 %.dll64P::
 	$(P)DLLCREATE
