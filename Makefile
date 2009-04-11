@@ -9,17 +9,11 @@ ifdef DEBUG
 CFLAGS += -DDEBUG
 endif
 
-# bridge
-BRIDGE_LIBS := -L$(BRIDGE_DIR) -lbridge
-BRIDGE_CFLAGS := -I$(BRIDGE_DIR)/inc -DOMAP_3430
-
 all:
 
 # dummy
 
-dummy: dummy_arm.o log.o
-dummy: CFLAGS := $(CFLAGS) $(BRIDGE_CFLAGS)
-dummy: LIBS := $(BRIDGE_LIBS) -lpthread
+dummy: dummy_arm.o dsp_bridge.o log.o
 
 bins += dummy
 

@@ -24,15 +24,15 @@
 #include <stdbool.h>
 #include <signal.h>
 
-#include <dbapi.h>
-
 #include "dmm_buffer.h"
+#include "dsp_bridge.h"
 #include "log.h"
 
 static unsigned long input_buffer_size = 0x1000;
 static unsigned long output_buffer_size = 0x1000;
 static bool done;
 
+static int dsp_handle;
 static void *proc;
 
 static void
@@ -45,15 +45,15 @@ static inline void *
 create_node(void)
 {
 	void *node;
-	const struct DSP_UUID dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
+	const dsp_uuid_t dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
 		{ 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
 
-	if (DSP_FAILED(DSPNode_Allocate(proc, &dummy_uuid, NULL, NULL, &node))) {
+	if (!dsp_node_allocate(dsp_handle, proc, &dummy_uuid, NULL, NULL, &node)) {
 		pr_err("dsp node allocate failed");
 		return NULL;
 	}
 
-	if (DSP_FAILED(DSPNode_Create(node))) {
+	if (!dsp_node_create(dsp_handle, node)) {
 		pr_err("dsp node create failed");
 		return NULL;
 	}
@@ -67,8 +67,8 @@ static inline bool
 destroy_node(void *node)
 {
 	if (node) {
-		if (DSP_FAILED(DSPNode_Delete(node))) {
-			pr_err("dsp node delete failed");
+		if (!dsp_node_free(dsp_handle, node)) {
+			pr_err("dsp node free failed");
 			return false;
 		}
 
@@ -83,32 +83,32 @@ configure_dsp_node(void *node,
 		   dmm_buffer_t *input_buffer,
 		   dmm_buffer_t *output_buffer)
 {
-	struct DSP_MSG msg;
+	dsp_msg_t msg;
 
-	msg.dwCmd = 0;
-	msg.dwArg1 = (unsigned long) input_buffer->map;
-	msg.dwArg2 = (unsigned long) output_buffer->map;
-	DSPNode_PutMessage(node, &msg, -1);
+	msg.cmd = 0;
+	msg.arg_1 = (uint32_t) input_buffer->map;
+	msg.arg_2 = (uint32_t) output_buffer->map;
+	dsp_node_put_message(dsp_handle, node, &msg, -1);
 }
 
 static bool
 run_task(void *node,
 	 unsigned long times)
 {
-	DSP_STATUS exit_status;
+	unsigned long exit_status;
 
 	dmm_buffer_t *input_buffer;
 	dmm_buffer_t *output_buffer;
 
-	if (DSP_FAILED(DSPNode_Run(node))) {
+	if (!dsp_node_run(dsp_handle, node)) {
 		pr_err("dsp node run failed");
 		return false;
 	}
 
 	pr_info("dsp node running");
 
-	input_buffer = dmm_buffer_new(proc);
-	output_buffer = dmm_buffer_new(proc);
+	input_buffer = dmm_buffer_new(dsp_handle, proc);
+	output_buffer = dmm_buffer_new(dsp_handle, proc);
 
 	dmm_buffer_allocate(input_buffer, input_buffer_size);
 	dmm_buffer_allocate(output_buffer, output_buffer_size);
@@ -118,7 +118,7 @@ run_task(void *node,
 	pr_info("running %lu times", times);
 
 	while (!done) {
-		struct DSP_MSG msg;
+		dsp_msg_t msg;
 
 #ifdef FILL_DATA
 		{
@@ -131,10 +131,10 @@ run_task(void *node,
 		}
 #endif
 		dmm_buffer_flush(input_buffer);
-		msg.dwCmd = 1;
-		msg.dwArg1 = input_buffer->size;
-		DSPNode_PutMessage(node, &msg, -1);
-		DSPNode_GetMessage(node, &msg, -1);
+		msg.cmd = 1;
+		msg.arg_1 = input_buffer->size;
+		dsp_node_put_message(dsp_handle, node, &msg, -1);
+		dsp_node_get_message(dsp_handle, node, &msg, -1);
 		dmm_buffer_invalidate(output_buffer);
 
 		if (--times == 0)
@@ -147,7 +147,7 @@ run_task(void *node,
 	dmm_buffer_free(output_buffer);
 	dmm_buffer_free(input_buffer);
 
-	if (DSP_FAILED(DSPNode_Terminate(node, &exit_status))) {
+	if (!dsp_node_terminate (dsp_handle, node, &exit_status)) {
 		pr_err("dsp node terminate failed: %lx", exit_status);
 		return false;
 	}
@@ -172,12 +172,14 @@ main(int argc,
 	debug_level = 2;
 #endif
 
-	if (DSP_FAILED(DspManager_Open(0, NULL))) {
+	dsp_handle = dsp_open();
+
+	if (dsp_handle < 0) {
 		pr_err("dsp open failed");
 		return -1;
 	}
 
-	if (DSP_FAILED(DSPProcessor_Attach(0, NULL, &proc))) {
+	if (!dsp_attach(dsp_handle, 0, NULL, &proc)) {
 		pr_err("dsp attach failed");
 		ret = -1;
 		goto leave;
@@ -195,7 +197,7 @@ main(int argc,
 
 leave:
 	if (proc) {
-		if (DSP_FAILED(DSPProcessor_Detach(proc))) {
+		if (!dsp_detach(dsp_handle, proc)) {
 			pr_err("dsp detach failed");
 			ret = 1;
 			goto leave;
@@ -203,7 +205,7 @@ leave:
 		proc = NULL;
 	}
 
-	if (DSP_FAILED(DspManager_Close(0, NULL))) {
+	if (dsp_close(dsp_handle) < 0) {
 		pr_err("dsp close failed");
 		return -1;
 	}

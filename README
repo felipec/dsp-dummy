@@ -22,17 +22,9 @@ on the dspbridge_dsp package.
  mv tmp/dsp/bdsptools/packages/ti/dspbridge/dsp/doffbuild /opt/doffbuild
  rm -rf tmp
 
-= libdspbridge =
-
-This library is used by the user-space applications.
-
- git clone git://github.com/felipec/libdspbridge.git
- cd libdspbridge
- make DESTDIR=$rootfs install
-
 = Build =
 
- make DSP_TOOLS=/opt/dsptools DSP_DOFFBUILD=/opt/doffbuild BRIDGE_DIR=../libdspbridge
+ make DSP_TOOLS=/opt/dsptools DSP_DOFFBUILD=/opt/doffbuild
 
 As a result you'll have two binaries; 'dummy.dll64P' for dsp-side, and 'dummy' for arm-side.
 

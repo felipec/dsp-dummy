@@ -26,9 +26,8 @@
 
 #include <stdlib.h> /* for calloc, free */
 
+#include "dsp_bridge.h"
 #include "log.h"
-
-#include <dbapi.h>
 
 #define DMM_PAGE_SIZE 4096
 #define ARM_BUFFER_ALIGNMENT 128
@@ -36,6 +35,7 @@
 
 typedef struct
 {
+	int handle;
 	void *node;
 	void *data;
 	void *allocated_data;
@@ -45,12 +45,14 @@ typedef struct
 } dmm_buffer_t;
 
 static inline dmm_buffer_t *
-dmm_buffer_new(void *node)
+dmm_buffer_new(int handle,
+	       void *node)
 {
 	dmm_buffer_t *b;
 	b = calloc(1, sizeof(*b));
 
 	pr_debug("%p", b);
+	b->handle = handle;
 	b->node = node;
 
 	return b;
@@ -70,30 +72,30 @@ dmm_buffer_map(dmm_buffer_t *b)
 	unsigned int to_reserve;
 	pr_debug("%p", b);
 	to_reserve = ROUND_UP(b->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
-	DSPProcessor_ReserveMemory(b->node, to_reserve, &b->reserve);
-	DSPProcessor_Map(b->node, b->data, b->size, b->reserve, &b->map, 0);
+	dsp_reserve(b->handle, b->node, to_reserve, &b->reserve);
+	dsp_map(b->handle, b->node, b->data, b->size, b->reserve, &b->map, 0);
 }
 
 static inline void
 dmm_buffer_unmap(dmm_buffer_t *b)
 {
 	pr_debug("%p", b);
-	DSPProcessor_UnMap(b->node, b->map);
-	DSPProcessor_UnReserveMemory(b->node, b->reserve);
+	dsp_unmap(b->handle, b->node, b->map);
+	dsp_unreserve(b->handle, b->node, b->reserve);
 }
 
 static inline void
 dmm_buffer_flush(dmm_buffer_t *b)
 {
 	pr_debug("%p", b);
-	DSPProcessor_FlushMemory(b->node, b->data, b->size, 0);
+	dsp_flush(b->handle, b->node, b->data, b->size, 0);
 }
 
 static inline void
 dmm_buffer_invalidate(dmm_buffer_t *b)
 {
 	pr_debug("%p", b);
-	DSPProcessor_InvalidateMemory(b->node, b->data, b->size);
+	dsp_invalidate(b->handle, b->node, b->data, b->size);
 }
 
 static inline void
