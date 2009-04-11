@@ -168,7 +168,7 @@ main(int argc,
 
 	debug_level = 2;
 
-	if (DSP_SUCCEEDED(DspManager_Open(0, NULL))) {
+	if (DSP_FAILED(DspManager_Open(0, NULL))) {
 		pr_err("dsp open failed");
 		return -1;
 	}
