@@ -37,7 +37,7 @@ dummy_delete (void)
 unsigned int
 dummy_execute (void *env)
 {
-	RMS_DSPMSG msg;
+	dsp_msg_t msg;
 	void *input;
 	void *output;
 	unsigned char done = 0;

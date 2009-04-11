@@ -21,15 +21,17 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include <stdint.h>
+
 typedef struct
 {
-	unsigned int cmd;
-	unsigned int arg1;
-	unsigned int arg2;
-} RMS_DSPMSG;
+	uint32_t cmd;
+	uint32_t arg1;
+	uint32_t arg2;
+} dsp_msg_t;
 
-extern unsigned short NODE_getMsg (void *node, RMS_DSPMSG *msg, unsigned int timeout);
-extern unsigned short NODE_putMsg (void *node, void *dest, RMS_DSPMSG *msg, unsigned int timeout);
+extern unsigned short NODE_getMsg (void *node, dsp_msg_t *msg, unsigned int timeout);
+extern unsigned short NODE_putMsg (void *node, void *dest, dsp_msg_t *msg, unsigned int timeout);
 
 extern void BCACHE_inv (void *ptr, size_t size, unsigned short wait);
 extern void BCACHE_wbInv (void *ptr, size_t size, unsigned short wait);

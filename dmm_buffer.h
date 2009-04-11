@@ -34,19 +34,19 @@
 
 typedef struct
 {
-	DSP_HNODE handle;
+	void *handle;
 	void *data;
 	void *allocated_data;
 	unsigned long size;
 	void *reserve;
 	void *map;
-} DmmBuffer;
+} dmm_buffer_t;
 
-static inline DmmBuffer *
-dmm_buffer_new (DSP_HNODE handle)
+static inline dmm_buffer_t *
+dmm_buffer_new (void *handle)
 {
-	DmmBuffer *buffer;
-	buffer = calloc (1, sizeof (DmmBuffer));
+	dmm_buffer_t *buffer;
+	buffer = calloc (1, sizeof (dmm_buffer_t));
 
 	buffer->handle = handle;
 
@@ -54,7 +54,7 @@ dmm_buffer_new (DSP_HNODE handle)
 }
 
 static inline void
-dmm_buffer_free (DmmBuffer *buffer)
+dmm_buffer_free (dmm_buffer_t *buffer)
 {
 #ifdef DEBUG
 	printf ("%s: %p\n", __func__, buffer);
@@ -64,7 +64,7 @@ dmm_buffer_free (DmmBuffer *buffer)
 }
 
 static inline void
-dmm_buffer_map (DmmBuffer *buffer)
+dmm_buffer_map (dmm_buffer_t *buffer)
 {
 #ifdef DEBUG
 	printf ("%s: %p\n", __func__, buffer);
@@ -77,7 +77,7 @@ dmm_buffer_map (DmmBuffer *buffer)
 }
 
 static inline void
-dmm_buffer_unmap (DmmBuffer *buffer)
+dmm_buffer_unmap (dmm_buffer_t *buffer)
 {
 #ifdef DEBUG
 	printf ("%s: %p\n", __func__, buffer);
@@ -87,7 +87,7 @@ dmm_buffer_unmap (DmmBuffer *buffer)
 }
 
 static inline void
-dmm_buffer_flush (DmmBuffer *buffer)
+dmm_buffer_flush (dmm_buffer_t *buffer)
 {
 #ifdef DEBUG
 	printf ("%s: %p\n", __func__, buffer);
@@ -96,7 +96,7 @@ dmm_buffer_flush (DmmBuffer *buffer)
 }
 
 static inline void
-dmm_buffer_invalidate (DmmBuffer *buffer)
+dmm_buffer_invalidate (dmm_buffer_t *buffer)
 {
 #ifdef DEBUG
 	printf ("%s: %p\n", __func__, buffer);
@@ -105,7 +105,7 @@ dmm_buffer_invalidate (DmmBuffer *buffer)
 }
 
 static inline void
-dmm_buffer_allocate (DmmBuffer *buffer,
+dmm_buffer_allocate (dmm_buffer_t *buffer,
 		     unsigned int size)
 {
 #ifdef ARM_BUFFER_ALIGNMENT
@@ -119,7 +119,7 @@ dmm_buffer_allocate (DmmBuffer *buffer,
 }
 
 static inline void
-dmm_buffer_use (DmmBuffer *buffer,
+dmm_buffer_use (dmm_buffer_t *buffer,
 		void *data,
 		unsigned int size)
 {

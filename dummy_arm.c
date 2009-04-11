@@ -35,7 +35,7 @@ static bool done;
 
 static const struct DSP_UUID dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b, { 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
 
-static DSP_HPROCESSOR proc;
+static void *proc;
 
 static void
 signal_handler (int signal)
@@ -43,10 +43,10 @@ signal_handler (int signal)
 	done = true;
 }
 
-static DSP_HNODE
+static void *
 create_node (void)
 {
-	DSP_HNODE node;
+	void *node;
 	DSP_STATUS status = DSP_SOK;
 
 	status = DSPNode_Allocate (proc, &dummy_uuid, NULL, NULL, &node);
@@ -68,9 +68,9 @@ create_node (void)
 }
 
 static inline void
-configure_dsp_node (DSP_HNODE node,
-		    DmmBuffer *input_buffer,
-		    DmmBuffer *output_buffer)
+configure_dsp_node (void *node,
+		    dmm_buffer_t *input_buffer,
+		    dmm_buffer_t *output_buffer)
 {
 	struct DSP_MSG msg;
 
@@ -81,14 +81,14 @@ configure_dsp_node (DSP_HNODE node,
 }
 
 static bool
-run_task (DSP_HNODE node,
+run_task (void *node,
 	  unsigned long times)
 {
 	DSP_STATUS status;
 	DSP_STATUS exit_status;
 
-	DmmBuffer *input_buffer;
-	DmmBuffer *output_buffer;
+	dmm_buffer_t *input_buffer;
+	dmm_buffer_t *output_buffer;
 
 	/* start the node */
 	status = DSPNode_Run (node);
@@ -146,7 +146,7 @@ run_task (DSP_HNODE node,
 }
 
 static bool
-destroy_node (DSP_HNODE node)
+destroy_node (void *node)
 {
 	DSP_STATUS status = DSP_SOK;
 
@@ -172,7 +172,7 @@ main (int argc,
 	status = DspManager_Open (0, NULL);
 	if (DSP_SUCCEEDED (status))
 	{
-		DSP_HNODE node;
+		void *node;
 
 		/* processor level initialization. */
 		status = DSPProcessor_Attach (0, NULL, &proc);
