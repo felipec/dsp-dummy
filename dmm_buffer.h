@@ -50,6 +50,7 @@ dmm_buffer_new(void *node)
 	dmm_buffer_t *b;
 	b = calloc(1, sizeof(*b));
 
+	pr_debug("%p", b);
 	b->node = node;
 
 	return b;
@@ -66,8 +67,8 @@ dmm_buffer_free(dmm_buffer_t *b)
 static inline void
 dmm_buffer_map(dmm_buffer_t *b)
 {
-	pr_debug("%p", b);
 	unsigned int to_reserve;
+	pr_debug("%p", b);
 	to_reserve = ROUND_UP(b->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
 	DSPProcessor_ReserveMemory(b->node, to_reserve, &b->reserve);
 	DSPProcessor_Map(b->node, b->data, b->size, b->reserve, &b->map, 0);
@@ -99,6 +100,7 @@ static inline void
 dmm_buffer_allocate(dmm_buffer_t *b,
 		    unsigned int size)
 {
+	pr_debug("%p", b);
 #ifdef ARM_BUFFER_ALIGNMENT
 	b->allocated_data = malloc(size + 2 * ARM_BUFFER_ALIGNMENT);
 	b->data = (void *) ROUND_UP((unsigned long) b->allocated_data, ARM_BUFFER_ALIGNMENT);
@@ -114,6 +116,7 @@ dmm_buffer_use(dmm_buffer_t *b,
 	       void *data,
 	       unsigned int size)
 {
+	pr_debug("%p", b);
 	b->data = data;
 	b->size = size;
 	dmm_buffer_map(b);
