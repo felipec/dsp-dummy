@@ -35,11 +35,7 @@ static bool done;
 
 static const struct DSP_UUID dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b, { 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
 
-typedef struct
-{
-	DSP_HPROCESSOR processor;
-	DSP_HNODE node;
-} Core;
+static DSP_HPROCESSOR proc;
 
 static void
 signal_handler (int signal)
@@ -47,12 +43,13 @@ signal_handler (int signal)
 	done = true;
 }
 
-static bool
-create_node (Core *core)
+static DSP_HNODE
+create_node (void)
 {
+	DSP_HNODE node;
 	DSP_STATUS status = DSP_SOK;
 
-	status = DSPNode_Allocate (core->processor, &dummy_uuid, NULL, NULL, &core->node);
+	status = DSPNode_Allocate (proc, &dummy_uuid, NULL, NULL, &node);
 
 	if (DSP_FAILED (status))
 		fprintf (stdout, "DSPNode_Allocate failed: 0x%lx\n", status);
@@ -60,18 +57,18 @@ create_node (Core *core)
 	/* create node on the DSP */
 	if (DSP_SUCCEEDED (status))
 	{
-		status = DSPNode_Create (core->node);
+		status = DSPNode_Create (node);
 		if (DSP_FAILED (status))
 			fprintf (stdout, "DSPNode_Create failed: 0x%lx\n", status);
 		else
 			fprintf (stdout, "DSPNodeCreate succeeded\n");
 	}
 
-	return DSP_SUCCEEDED (status) ? true : false;
+	return DSP_SUCCEEDED (status) ? node : NULL;
 }
 
 static inline void
-configure_dsp_node (Core *core,
+configure_dsp_node (DSP_HNODE node,
 		    DmmBuffer *input_buffer,
 		    DmmBuffer *output_buffer)
 {
@@ -80,11 +77,11 @@ configure_dsp_node (Core *core,
 	msg.dwCmd = 0;
 	msg.dwArg1 = (unsigned long) input_buffer->map;
 	msg.dwArg2 = (unsigned long) output_buffer->map;
-	DSPNode_PutMessage (core->node, &msg, DSP_FOREVER);
+	DSPNode_PutMessage (node, &msg, DSP_FOREVER);
 }
 
 static bool
-run_task (Core *core,
+run_task (DSP_HNODE node,
 	  unsigned long times)
 {
 	DSP_STATUS status;
@@ -94,19 +91,19 @@ run_task (Core *core,
 	DmmBuffer *output_buffer;
 
 	/* start the node */
-	status = DSPNode_Run (core->node);
+	status = DSPNode_Run (node);
 	if (DSP_FAILED (status))
 		fprintf (stdout, "DSPNode_Run failed: 0x%lx\n", status);
 	else
 		fprintf (stdout, "DSPNode_run succeeded\n");
 
-	input_buffer = dmm_buffer_new (core->processor);
-	output_buffer = dmm_buffer_new (core->processor);
+	input_buffer = dmm_buffer_new (proc);
+	output_buffer = dmm_buffer_new (proc);
 
 	dmm_buffer_allocate (input_buffer, input_buffer_size);
 	dmm_buffer_allocate (output_buffer, output_buffer_size);
 
-	configure_dsp_node (core, input_buffer, output_buffer);
+	configure_dsp_node (node, input_buffer, output_buffer);
 
 	fprintf (stdout, "running %lu times\n", times);
 
@@ -127,8 +124,8 @@ run_task (Core *core,
 		dmm_buffer_flush (input_buffer);
 		msg.dwCmd = 1;
 		msg.dwArg1 = input_buffer->size;
-		DSPNode_PutMessage (core->node, &msg, DSP_FOREVER);
-		DSPNode_GetMessage (core->node, &msg, DSP_FOREVER);
+		DSPNode_PutMessage (node, &msg, DSP_FOREVER);
+		DSPNode_GetMessage (node, &msg, DSP_FOREVER);
 		dmm_buffer_invalidate (output_buffer);
 
 		if (--times == 0)
@@ -141,7 +138,7 @@ run_task (Core *core,
 	dmm_buffer_free (output_buffer);
 	dmm_buffer_free (input_buffer);
 
-	status = DSPNode_Terminate (core->node, &exit_status);
+	status = DSPNode_Terminate (node, &exit_status);
 	if (DSP_FAILED (status))
 		fprintf (stdout, "DSPNode_Terminate failed: 0x%lx\n", status);
 
@@ -149,17 +146,16 @@ run_task (Core *core,
 }
 
 static bool
-destroy_node (Core *core)
+destroy_node (DSP_HNODE node)
 {
 	DSP_STATUS status = DSP_SOK;
 
-	if (core->node)
+	if (node)
 	{
 		/* delete node */
-		status = DSPNode_Delete (core->node);
+		status = DSPNode_Delete (node);
 		if (DSP_FAILED (status))
 			fprintf (stdout, "DSPNode_Delete failed: 0x%lx\n", status);
-		core->node = NULL;
 	}
 
 	return DSP_SUCCEEDED (status) ? true : false;
@@ -170,38 +166,36 @@ main (int argc,
       char **argv)
 {
 	DSP_STATUS status = DSP_SOK;
-	Core core;
 
 	(void) signal (SIGINT, signal_handler);
-
-	/* context initialization */
-	core.processor = NULL;
 
 	status = DspManager_Open (0, NULL);
 	if (DSP_SUCCEEDED (status))
 	{
+		DSP_HNODE node;
+
 		/* processor level initialization. */
-		status = DSPProcessor_Attach (0, NULL, &core.processor);
+		status = DSPProcessor_Attach (0, NULL, &proc);
 		if (DSP_SUCCEEDED (status))
 		{
 			/* node level initialization. */
-			if (create_node (&core))
+			if ((node = create_node ()))
 			{
-				run_task (&core, 24 * 60 * 10);
+				run_task (node, 24 * 60 * 10);
 			}
 		}
 		else
 			fprintf (stdout, "DSPProcessor_Attach failed: 0x%lx\n", status);
 
-		destroy_node (&core);
+		destroy_node (node);
 
-		if (core.processor)
+		if (proc)
 		{
 			/* detach from processor */
-			status = DSPProcessor_Detach (core.processor);
+			status = DSPProcessor_Detach (proc);
 			if (DSP_FAILED (status))
 				fprintf (stdout, "DSPProcessor_Detach failed: 0x%lx\n", status);
-			core.processor = NULL;
+			proc = NULL;
 		}
 
 		status = DspManager_Close (0, NULL);
