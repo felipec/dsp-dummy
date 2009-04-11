@@ -28,44 +28,44 @@
 DmmBuffer *
 dmm_buffer_new (DSP_HNODE handle)
 {
-    DmmBuffer *buffer;
-    buffer = calloc (1, sizeof (DmmBuffer));
+	DmmBuffer *buffer;
+	buffer = calloc (1, sizeof (DmmBuffer));
 
-    buffer->handle = handle;
+	buffer->handle = handle;
 
-    return buffer;
+	return buffer;
 }
 
 void
 dmm_buffer_free (DmmBuffer *buffer)
 {
 #ifdef DEBUG
-    printf ("%s: %p\n", __func__, buffer);
+	printf ("%s: %p\n", __func__, buffer);
 #endif
-    free (buffer->allocated_data);
-    free (buffer);
+	free (buffer->allocated_data);
+	free (buffer);
 }
 
 void
 dmm_buffer_allocate (DmmBuffer *buffer,
-                     unsigned int size)
+		     unsigned int size)
 {
 #ifdef ARM_BUFFER_ALIGNMENT
-    buffer->allocated_data = malloc (size + 2 * ARM_BUFFER_ALIGNMENT);
-    buffer->data = (void *) ROUND_UP ((unsigned long) buffer->allocated_data, ARM_BUFFER_ALIGNMENT);
+	buffer->allocated_data = malloc (size + 2 * ARM_BUFFER_ALIGNMENT);
+	buffer->data = (void *) ROUND_UP ((unsigned long) buffer->allocated_data, ARM_BUFFER_ALIGNMENT);
 #else
-    buffer->data = buffer->allocated_data = malloc (size);
+	buffer->data = buffer->allocated_data = malloc (size);
 #endif
-    buffer->size = size;
-    dmm_buffer_map (buffer);
+	buffer->size = size;
+	dmm_buffer_map (buffer);
 }
 
 void
 dmm_buffer_use (DmmBuffer *buffer,
-                void *data,
-                unsigned int size)
+		void *data,
+		unsigned int size)
 {
-    buffer->data = data;
-    buffer->size = size;
-    dmm_buffer_map (buffer);
+	buffer->data = data;
+	buffer->size = size;
+	dmm_buffer_map (buffer);
 }

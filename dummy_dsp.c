@@ -25,51 +25,51 @@
 unsigned int
 dummy_create (void)
 {
-    return 0x8000;
+	return 0x8000;
 }
 
 unsigned int
 dummy_delete (void)
 {
-    return 0x8000;
+	return 0x8000;
 }
 
 unsigned int
 dummy_execute (void *env)
 {
-    RMS_DSPMSG msg;
-    void *input;
-    void *output;
-    unsigned char done = 0;
+	RMS_DSPMSG msg;
+	void *input;
+	void *output;
+	unsigned char done = 0;
 
-    while (!done)
-    {
-        NODE_getMsg (env, &msg, (unsigned) -1);
+	while (!done)
+	{
+		NODE_getMsg (env, &msg, (unsigned) -1);
 
-        switch (msg.cmd)
-        {
-            case 0:
-                input = (void *) (msg.arg1);
-                output = (void *) (msg.arg2);
-                break;
-            case 1:
-                {
-                    unsigned int size;
+		switch (msg.cmd)
+		{
+			case 0:
+				input = (void *) (msg.arg1);
+				output = (void *) (msg.arg2);
+				break;
+			case 1:
+				{
+					unsigned int size;
 
-                    size = (unsigned int) (msg.arg1);
+					size = (unsigned int) (msg.arg1);
 
-                    BCACHE_inv (input, size, 1);
-                    memcpy (output, input, size);
-                    BCACHE_wbInv (output, size, 1);
+					BCACHE_inv (input, size, 1);
+					memcpy (output, input, size);
+					BCACHE_wbInv (output, size, 1);
 
-                    NODE_putMsg (env, NULL, &msg, 0);
-                    break;
-                }
-            case 0x80000000:
-                done = 1;
-                break;
-        }
-    }
+					NODE_putMsg (env, NULL, &msg, 0);
+					break;
+				}
+			case 0x80000000:
+				done = 1;
+				break;
+		}
+	}
 
-    return 0x8000;
+	return 0x8000;
 }

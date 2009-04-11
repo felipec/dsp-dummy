@@ -32,12 +32,12 @@
 
 typedef struct
 {
-    DSP_HNODE handle;
-    void *data;
-    void *allocated_data;
-    unsigned long size;
-    void *reserve;
-    void *map;
+	DSP_HNODE handle;
+	void *data;
+	void *allocated_data;
+	unsigned long size;
+	void *reserve;
+	void *map;
 } DmmBuffer;
 
 DmmBuffer *dmm_buffer_new (DSP_HNODE handle);
@@ -52,41 +52,41 @@ static inline void
 dmm_buffer_map (DmmBuffer *buffer)
 {
 #ifdef DEBUG
-    printf ("%s: %p\n", __func__, buffer);
+	printf ("%s: %p\n", __func__, buffer);
 #endif
-    unsigned int to_reserve;
-    to_reserve = ROUND_UP (buffer->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
-    DSPProcessor_ReserveMemory (buffer->handle, to_reserve, &buffer->reserve);
-    DSPProcessor_Map (buffer->handle, buffer->data, buffer->size,
-                      buffer->reserve, &buffer->map, 0);
+	unsigned int to_reserve;
+	to_reserve = ROUND_UP (buffer->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
+	DSPProcessor_ReserveMemory (buffer->handle, to_reserve, &buffer->reserve);
+	DSPProcessor_Map (buffer->handle, buffer->data, buffer->size,
+			  buffer->reserve, &buffer->map, 0);
 }
 
 static inline void
 dmm_buffer_unmap (DmmBuffer *buffer)
 {
 #ifdef DEBUG
-    printf ("%s: %p\n", __func__, buffer);
+	printf ("%s: %p\n", __func__, buffer);
 #endif
-    DSPProcessor_UnMap (buffer->handle, buffer->map);
-    DSPProcessor_UnReserveMemory (buffer->handle, buffer->reserve);
+	DSPProcessor_UnMap (buffer->handle, buffer->map);
+	DSPProcessor_UnReserveMemory (buffer->handle, buffer->reserve);
 }
 
 static inline void
 dmm_buffer_flush (DmmBuffer *buffer)
 {
 #ifdef DEBUG
-    printf ("%s: %p\n", __func__, buffer);
+	printf ("%s: %p\n", __func__, buffer);
 #endif
-    DSPProcessor_FlushMemory (buffer->handle, buffer->data, buffer->size, 0);
+	DSPProcessor_FlushMemory (buffer->handle, buffer->data, buffer->size, 0);
 }
 
 static inline void
 dmm_buffer_invalidate (DmmBuffer *buffer)
 {
 #ifdef DEBUG
-    printf ("%s: %p\n", __func__, buffer);
+	printf ("%s: %p\n", __func__, buffer);
 #endif
-    DSPProcessor_InvalidateMemory (buffer->handle, buffer->data, buffer->size);
+	DSPProcessor_InvalidateMemory (buffer->handle, buffer->data, buffer->size);
 }
 
 #endif /* DMM_BUFFER_H */

@@ -23,9 +23,9 @@
 
 typedef struct
 {
-    unsigned int cmd;
-    unsigned int arg1;
-    unsigned int arg2;
+	unsigned int cmd;
+	unsigned int arg1;
+	unsigned int arg2;
 } RMS_DSPMSG;
 
 extern unsigned short NODE_getMsg (void *node, RMS_DSPMSG *msg, unsigned int timeout);
