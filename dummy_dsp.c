@@ -23,19 +23,19 @@
 #include "node.h"
 
 unsigned int
-dummy_create (void)
+dummy_create(void)
 {
 	return 0x8000;
 }
 
 unsigned int
-dummy_delete (void)
+dummy_delete(void)
 {
 	return 0x8000;
 }
 
 unsigned int
-dummy_execute (void *env)
+dummy_execute(void *env)
 {
 	dsp_msg_t msg;
 	void *input;
@@ -44,7 +44,7 @@ dummy_execute (void *env)
 
 	while (!done)
 	{
-		NODE_getMsg (env, &msg, (unsigned) -1);
+		NODE_getMsg(env, &msg, (unsigned) -1);
 
 		switch (msg.cmd)
 		{
@@ -58,11 +58,11 @@ dummy_execute (void *env)
 
 					size = (unsigned int) (msg.arg1);
 
-					BCACHE_inv (input, size, 1);
-					memcpy (output, input, size);
-					BCACHE_wbInv (output, size, 1);
+					BCACHE_inv(input, size, 1);
+					memcpy(output, input, size);
+					BCACHE_wbInv(output, size, 1);
 
-					NODE_putMsg (env, NULL, &msg, 0);
+					NODE_putMsg(env, NULL, &msg, 0);
 					break;
 				}
 			case 0x80000000:
