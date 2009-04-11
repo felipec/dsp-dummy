@@ -33,8 +33,6 @@ static unsigned long input_buffer_size = 0x1000;
 static unsigned long output_buffer_size = 0x1000;
 static bool done;
 
-static const struct DSP_UUID dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b, { 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
-
 static void *proc;
 
 static void
@@ -43,11 +41,13 @@ signal_handler(int signal)
 	done = true;
 }
 
-static void *
+static inline void *
 create_node(void)
 {
 	void *node;
 	DSP_STATUS status = DSP_SOK;
+	const struct DSP_UUID dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
+		{ 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
 
 	status = DSPNode_Allocate(proc, &dummy_uuid, NULL, NULL, &node);
 
@@ -143,7 +143,7 @@ run_task(void *node,
 	return DSP_SUCCEEDED(status) ? true : false;
 }
 
-static bool
+static inline bool
 destroy_node(void *node)
 {
 	DSP_STATUS status = DSP_SOK;

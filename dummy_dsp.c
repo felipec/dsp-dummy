@@ -49,14 +49,14 @@ dummy_execute(void *env)
 		switch (msg.cmd)
 		{
 			case 0:
-				input = (void *) (msg.arg1);
-				output = (void *) (msg.arg2);
+				input = (void *) (msg.arg_1);
+				output = (void *) (msg.arg_2);
 				break;
 			case 1:
 				{
 					unsigned int size;
 
-					size = (unsigned int) (msg.arg1);
+					size = (unsigned int) (msg.arg_1);
 
 					BCACHE_inv(input, size, 1);
 					memcpy(output, input, size);

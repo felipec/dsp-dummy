@@ -26,8 +26,8 @@
 typedef struct
 {
 	uint32_t cmd;
-	uint32_t arg1;
-	uint32_t arg2;
+	uint32_t arg_1;
+	uint32_t arg_2;
 } dsp_msg_t;
 
 extern unsigned short NODE_getMsg(void *node, dsp_msg_t *msg, unsigned int timeout);

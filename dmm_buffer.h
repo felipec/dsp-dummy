@@ -34,7 +34,7 @@
 
 typedef struct
 {
-	void *handle;
+	void *node;
 	void *data;
 	void *allocated_data;
 	unsigned long size;
@@ -43,89 +43,88 @@ typedef struct
 } dmm_buffer_t;
 
 static inline dmm_buffer_t *
-dmm_buffer_new(void *handle)
+dmm_buffer_new(void *node)
 {
-	dmm_buffer_t *buffer;
-	buffer = calloc(1, sizeof(dmm_buffer_t));
+	dmm_buffer_t *b;
+	b = calloc(1, sizeof(*b));
 
-	buffer->handle = handle;
+	b->node = node;
 
-	return buffer;
+	return b;
 }
 
 static inline void
-dmm_buffer_free(dmm_buffer_t *buffer)
+dmm_buffer_free(dmm_buffer_t *b)
 {
 #ifdef DEBUG
-	printf("%s: %p\n", __func__, buffer);
+	printf("%s: %p\n", __func__, b);
 #endif
-	free(buffer->allocated_data);
-	free(buffer);
+	free(b->allocated_data);
+	free(b);
 }
 
 static inline void
-dmm_buffer_map(dmm_buffer_t *buffer)
+dmm_buffer_map(dmm_buffer_t *b)
 {
 #ifdef DEBUG
-	printf("%s: %p\n", __func__, buffer);
+	printf("%s: %p\n", __func__, b);
 #endif
 	unsigned int to_reserve;
-	to_reserve = ROUND_UP(buffer->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
-	DSPProcessor_ReserveMemory(buffer->handle, to_reserve, &buffer->reserve);
-	DSPProcessor_Map(buffer->handle, buffer->data, buffer->size,
-			 buffer->reserve, &buffer->map, 0);
+	to_reserve = ROUND_UP(b->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
+	DSPProcessor_ReserveMemory(b->node, to_reserve, &b->reserve);
+	DSPProcessor_Map(b->node, b->data, b->size, b->reserve, &b->map, 0);
 }
 
 static inline void
-dmm_buffer_unmap(dmm_buffer_t *buffer)
+dmm_buffer_unmap(dmm_buffer_t *b)
 {
 #ifdef DEBUG
-	printf("%s: %p\n", __func__, buffer);
+	printf("%s: %p\n", __func__, b);
 #endif
-	DSPProcessor_UnMap(buffer->handle, buffer->map);
-	DSPProcessor_UnReserveMemory(buffer->handle, buffer->reserve);
+	DSPProcessor_UnMap(b->node, b->map);
+	DSPProcessor_UnReserveMemory(b->node, b->reserve);
 }
 
 static inline void
-dmm_buffer_flush(dmm_buffer_t *buffer)
+dmm_buffer_flush(dmm_buffer_t *b)
 {
 #ifdef DEBUG
-	printf("%s: %p\n", __func__, buffer);
+	printf("%s: %p\n", __func__, b);
 #endif
-	DSPProcessor_FlushMemory(buffer->handle, buffer->data, buffer->size, 0);
+	DSPProcessor_FlushMemory(b->node, b->data, b->size, 0);
 }
 
 static inline void
-dmm_buffer_invalidate(dmm_buffer_t *buffer)
+dmm_buffer_invalidate(dmm_buffer_t *b)
 {
 #ifdef DEBUG
-	printf("%s: %p\n", __func__, buffer);
+	printf("%s: %p\n", __func__, b);
 #endif
-	DSPProcessor_InvalidateMemory(buffer->handle, buffer->data, buffer->size);
+	DSPProcessor_InvalidateMemory(b->node, b->data, b->size);
 }
 
 static inline void
-dmm_buffer_allocate(dmm_buffer_t *buffer,
+dmm_buffer_allocate(dmm_buffer_t *b,
 		    unsigned int size)
 {
 #ifdef ARM_BUFFER_ALIGNMENT
-	buffer->allocated_data = malloc(size + 2 * ARM_BUFFER_ALIGNMENT);
-	buffer->data = (void *) ROUND_UP((unsigned long) buffer->allocated_data, ARM_BUFFER_ALIGNMENT);
+	b->allocated_data = malloc(size + 2 * ARM_BUFFER_ALIGNMENT);
+	b->data = (void *) ROUND_UP((unsigned long) b->allocated_data, ARM_BUFFER_ALIGNMENT);
 #else
-	buffer->data = buffer->allocated_data = malloc(size);
+	b->data = b->allocated_data = malloc(size);
 #endif
-	buffer->size = size;
-	dmm_buffer_map(buffer);
+	b->size = size;
+	dmm_buffer_map(b);
 }
 
 static inline void
-dmm_buffer_use(dmm_buffer_t *buffer,
+dmm_buffer_use(dmm_buffer_t *b,
 	       void *data,
 	       unsigned int size)
 {
-	buffer->data = data;
-	buffer->size = size;
-	dmm_buffer_map(buffer);
+	b->data = data;
+	b->size = size;
+	dmm_buffer_map(b);
 }
 
 #endif /* DMM_BUFFER_H */
