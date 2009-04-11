@@ -166,7 +166,11 @@ main(int argc,
 
 	(void) signal(SIGINT, signal_handler);
 
+#ifdef DEBUG
+	debug_level = 3;
+#else
 	debug_level = 2;
+#endif
 
 	if (DSP_FAILED(DspManager_Open(0, NULL))) {
 		pr_err("dsp open failed");

@@ -1,6 +1,5 @@
 CC := arm-linux-gcc
-# CFLAGS := -Wall -g3
-CFLAGS := -Wall -O2
+CFLAGS := -O2 -Wall -Werror
 
 CL6X := $(DSP_TOOLS)/bin/cl6x
 LNK6X := $(DSP_TOOLS)/bin/lnk6x
@@ -35,38 +34,30 @@ bins += dummy.dll64P
 all: $(bins)
 
 clean:
-	$(Q)rm -f $(bins)
-	$(Q)rm -f *.o *.o64P *.x64P
+	$(QUIET_CLEAN) rm -f $(bins) *.o *.o64P *.x64P
 
-# from Lauri Leukkunen's build system
-ifdef V
-Q = 
-P = @printf "" # <- space before hash is important!!!
-else
-P = @printf "[%s] $@\n" # <- space before hash is important!!!
-Q = @
-endif
+# pretty print
+V = @
+Q = $(V:y=)
+QUIET_CC    = $(Q:@=@echo '   CC         '$@;)
+QUIET_LINK  = $(Q:@=@echo '   LINK       '$@;)
+QUIET_CLEAN = $(Q:@=@echo '   CLEAN      '$@;)
+QUIET_DLL   = $(Q:@=@echo '   DLLCREATE  '$@;)
 
 %.o64P:: %.s
-	$(P)CL6X
-	$(Q)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
+	$(QUIET_CC)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
 
 %.o64P:: %.c
-	$(P)CL6X
-	$(Q)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
+	$(QUIET_CC)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
 
 %.x64P::
-	$(P)LNK6X
-	$(Q)$(LNK6X) -r -cr --localize='$$bss' -o $@ $+
+	$(QUIET_LINK)$(LNK6X) -r -cr --localize='$$bss' -o $@ $+
 
 %.dll64P::
-	$(P)DLLCREATE
-	$(Q)$(DLLCREATE) $< -o=$@
+	$(QUIET_DLL)$(DLLCREATE) $< -o=$@
 
 %.o:: %.c
-	$(P)CC
-	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
+	$(QUIET_CC)$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
 dummy:
-	$(P)LINK
-	$(Q)$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(QUIET_CC)$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
