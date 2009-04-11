@@ -18,7 +18,7 @@ all:
 
 # dummy
 
-dummy: dummy_arm.o
+dummy: dummy_arm.o log.o
 dummy: CFLAGS := $(CFLAGS) $(BRIDGE_CFLAGS)
 dummy: LIBS := $(BRIDGE_LIBS) -lpthread
 

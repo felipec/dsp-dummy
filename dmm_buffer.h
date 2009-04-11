@@ -26,6 +26,8 @@
 
 #include <stdlib.h> /* for calloc, free */
 
+#include "log.h"
+
 #include <dbapi.h>
 
 #define DMM_PAGE_SIZE 4096
@@ -56,9 +58,7 @@ dmm_buffer_new(void *node)
 static inline void
 dmm_buffer_free(dmm_buffer_t *b)
 {
-#ifdef DEBUG
-	printf("%s: %p\n", __func__, b);
-#endif
+	pr_debug("%p", b);
 	free(b->allocated_data);
 	free(b);
 }
@@ -66,9 +66,7 @@ dmm_buffer_free(dmm_buffer_t *b)
 static inline void
 dmm_buffer_map(dmm_buffer_t *b)
 {
-#ifdef DEBUG
-	printf("%s: %p\n", __func__, b);
-#endif
+	pr_debug("%p", b);
 	unsigned int to_reserve;
 	to_reserve = ROUND_UP(b->size, DMM_PAGE_SIZE) + (2 * DMM_PAGE_SIZE);
 	DSPProcessor_ReserveMemory(b->node, to_reserve, &b->reserve);
@@ -78,9 +76,7 @@ dmm_buffer_map(dmm_buffer_t *b)
 static inline void
 dmm_buffer_unmap(dmm_buffer_t *b)
 {
-#ifdef DEBUG
-	printf("%s: %p\n", __func__, b);
-#endif
+	pr_debug("%p", b);
 	DSPProcessor_UnMap(b->node, b->map);
 	DSPProcessor_UnReserveMemory(b->node, b->reserve);
 }
@@ -88,18 +84,14 @@ dmm_buffer_unmap(dmm_buffer_t *b)
 static inline void
 dmm_buffer_flush(dmm_buffer_t *b)
 {
-#ifdef DEBUG
-	printf("%s: %p\n", __func__, b);
-#endif
+	pr_debug("%p", b);
 	DSPProcessor_FlushMemory(b->node, b->data, b->size, 0);
 }
 
 static inline void
 dmm_buffer_invalidate(dmm_buffer_t *b)
 {
-#ifdef DEBUG
-	printf("%s: %p\n", __func__, b);
-#endif
+	pr_debug("%p", b);
 	DSPProcessor_InvalidateMemory(b->node, b->data, b->size);
 }
 

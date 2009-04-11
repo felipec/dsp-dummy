@@ -19,7 +19,6 @@
  *
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -28,6 +27,7 @@
 #include <dbapi.h>
 
 #include "dmm_buffer.h"
+#include "log.h"
 
 static unsigned long input_buffer_size = 0x1000;
 static unsigned long output_buffer_size = 0x1000;
@@ -52,15 +52,15 @@ create_node(void)
 	status = DSPNode_Allocate(proc, &dummy_uuid, NULL, NULL, &node);
 
 	if (DSP_FAILED(status))
-		fprintf(stdout, "DSPNode_Allocate failed: 0x%lx\n", status);
+		pr_err("dsp node allocate failed");
 
 	/* create node on the DSP */
 	if (DSP_SUCCEEDED(status)) {
 		status = DSPNode_Create(node);
 		if (DSP_FAILED(status))
-			fprintf(stdout, "DSPNode_Create failed: 0x%lx\n", status);
+			pr_err("dsp node create failed");
 		else
-			fprintf(stdout, "DSPNodeCreate succeeded\n");
+			pr_info("dsp node create succeeded");
 	}
 
 	return DSP_SUCCEEDED(status) ? node : NULL;
@@ -92,9 +92,9 @@ run_task(void *node,
 	/* start the node */
 	status = DSPNode_Run(node);
 	if (DSP_FAILED(status))
-		fprintf(stdout, "DSPNode_Run failed: 0x%lx\n", status);
+		pr_err("dsp node run failed");
 	else
-		fprintf(stdout, "DSPNode_run succeeded\n");
+		pr_info("dsp node run succeeded");
 
 	input_buffer = dmm_buffer_new(proc);
 	output_buffer = dmm_buffer_new(proc);
@@ -104,7 +104,7 @@ run_task(void *node,
 
 	configure_dsp_node(node, input_buffer, output_buffer);
 
-	fprintf(stdout, "running %lu times\n", times);
+	pr_info("running %lu times", times);
 
 	while (!done) {
 		struct DSP_MSG msg;
@@ -138,7 +138,7 @@ run_task(void *node,
 
 	status = DSPNode_Terminate(node, &exit_status);
 	if (DSP_FAILED(status))
-		fprintf(stdout, "DSPNode_Terminate failed: 0x%lx\n", status);
+		pr_err("dsp node terminate failed");
 
 	return DSP_SUCCEEDED(status) ? true : false;
 }
@@ -151,7 +151,7 @@ destroy_node(void *node)
 	if (node) {
 		status = DSPNode_Delete(node);
 		if (DSP_FAILED(status))
-			fprintf(stdout, "DSPNode_Delete failed: 0x%lx\n", status);
+			pr_err("dsp node delete failed");
 	}
 
 	return DSP_SUCCEEDED(status) ? true : false;
@@ -165,6 +165,8 @@ main(int argc,
 
 	(void) signal(SIGINT, signal_handler);
 
+	debug_level = 2;
+
 	status = DspManager_Open(0, NULL);
 	if (DSP_SUCCEEDED(status)) {
 		void *node;
@@ -176,21 +178,21 @@ main(int argc,
 			}
 		}
 		else
-			fprintf(stdout, "DSPProcessor_Attach failed: 0x%lx\n", status);
+			pr_err("dsp attach failed");
 
 		destroy_node(node);
 
 		if (proc) {
 			status = DSPProcessor_Detach(proc);
 			if (DSP_FAILED(status))
-				fprintf(stdout, "DSPProcessor_Detach failed: 0x%lx\n", status);
+				pr_err("dsp detach failed");
 			proc = NULL;
 		}
 
 		status = DspManager_Close(0, NULL);
 	}
 	else
-		fprintf(stdout, "DspManager_Open failed: 0x%lx\n", status);
+		pr_err("dsp open failed");
 
 	return (DSP_SUCCEEDED(status) ? 0 : -1);
 }
