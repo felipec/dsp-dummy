@@ -1,5 +1,5 @@
 CC := arm-linux-gcc
-CFLAGS := -O2 -Wall -Werror
+CFLAGS := -O2 -Wall -Werror -ansi -std=c99
 
 CL6X := $(DSP_TOOLS)/bin/cl6x
 LNK6X := $(DSP_TOOLS)/bin/lnk6x
@@ -28,7 +28,7 @@ bins += dummy.dll64P
 all: $(bins)
 
 clean:
-	$(QUIET_CLEAN) rm -f $(bins) *.o *.o64P *.x64P
+	$(QUIET_CLEAN)$(RM) $(bins) *.o *.o64P *.x64P
 
 # pretty print
 V = @
