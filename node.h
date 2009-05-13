@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2008 Texas Instruments, Incorporated
- * Copyright (C) 2008 Nokia Corporation.
+ * Copyright (C) 2008-2009 Nokia Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
