@@ -39,7 +39,7 @@ typedef struct
 	void *node;
 	void *data;
 	void *allocated_data;
-	unsigned long size;
+	size_t size;
 	void *reserve;
 	void *map;
 } dmm_buffer_t;
@@ -85,22 +85,24 @@ dmm_buffer_unmap(dmm_buffer_t *b)
 }
 
 static inline void
-dmm_buffer_flush(dmm_buffer_t *b)
+dmm_buffer_flush(dmm_buffer_t *b,
+		 size_t size)
 {
 	pr_debug("%p", b);
-	dsp_flush(b->handle, b->node, b->data, b->size, 0);
+	dsp_flush(b->handle, b->node, b->data, size, 0);
 }
 
 static inline void
-dmm_buffer_invalidate(dmm_buffer_t *b)
+dmm_buffer_invalidate(dmm_buffer_t *b,
+		      size_t size)
 {
 	pr_debug("%p", b);
-	dsp_invalidate(b->handle, b->node, b->data, b->size);
+	dsp_invalidate(b->handle, b->node, b->data, size);
 }
 
 static inline void
 dmm_buffer_allocate(dmm_buffer_t *b,
-		    unsigned int size)
+		    size_t size)
 {
 	pr_debug("%p", b);
 #ifdef ARM_BUFFER_ALIGNMENT
@@ -116,7 +118,7 @@ dmm_buffer_allocate(dmm_buffer_t *b,
 static inline void
 dmm_buffer_use(dmm_buffer_t *b,
 	       void *data,
-	       unsigned int size)
+	       size_t size)
 {
 	pr_debug("%p", b);
 	b->data = data;

@@ -130,12 +130,12 @@ run_task(void *node,
 			foo++;
 		}
 #endif
-		dmm_buffer_flush(input_buffer);
+		dmm_buffer_flush(input_buffer, input_buffer->size);
 		msg.cmd = 1;
 		msg.arg_1 = input_buffer->size;
 		dsp_node_put_message(dsp_handle, node, &msg, -1);
 		dsp_node_get_message(dsp_handle, node, &msg, -1);
-		dmm_buffer_invalidate(output_buffer);
+		dmm_buffer_invalidate(output_buffer, output_buffer->size);
 
 		if (--times == 0)
 			break;
