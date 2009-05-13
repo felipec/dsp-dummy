@@ -42,12 +42,10 @@ dummy_execute(void *env)
 	void *output;
 	unsigned char done = 0;
 
-	while (!done)
-	{
+        while (!done) {
 		NODE_getMsg(env, &msg, (unsigned) -1);
 
-		switch (msg.cmd)
-		{
+		switch (msg.cmd) {
 			case 0:
 				input = (void *) (msg.arg_1);
 				output = (void *) (msg.arg_2);
@@ -60,7 +58,7 @@ dummy_execute(void *env)
 
 					BCACHE_inv(input, size, 1);
 					memcpy(output, input, size);
-					BCACHE_wbInv(output, size, 1);
+					BCACHE_wb(output, size, 1);
 
 					NODE_putMsg(env, NULL, &msg, 0);
 					break;
