@@ -1,14 +1,38 @@
+/*
+ * Copyright (C) 2009 Felipe Contreras
+ *
+ * Author: Felipe Contreras <felipe.contreras@gmail.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation
+ * version 2.1 of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
 #ifndef DSP_BRIDGE_H
 #define DSP_BRIDGE_H
 
 #include <stdbool.h>
 #include <stdint.h>
 
+#define ALLOCATE_HEAP
+
 #define DSP_SUCCEEDED(x) ((int)(x) >= 0)
 #define DSP_FAILED(x) ((int)(x) < 0)
 
 #define DSP_MMUFAULT 0x00000010
 #define DSP_SYSERROR 0x00000020
+#define DSP_NODEMESSAGEREADY 0x00000200
 
 typedef struct
 {
@@ -28,8 +52,12 @@ typedef struct
 	uint32_t arg_2;
 } dsp_msg_t;
 
-struct dsp_cb_data {};
-struct dsp_notification {};
+struct dsp_notification
+{
+	char *name;
+	void *handle;
+};
+
 struct dsp_node_attr_in
 {
 	unsigned long cb;
@@ -58,7 +86,7 @@ enum dsp_node_type
 	DSP_NODE_MESSAGE,
 };
 
-#if 1
+#ifdef ALLOCATE_HEAP
 struct DSP_RESOURCEREQMTS {
 	unsigned long cbStruct;
 	unsigned int uStaticDataSize;
@@ -112,7 +140,7 @@ bool dsp_detach(int handle,
 bool dsp_node_allocate(int handle,
 		       void *proc_handle,
 		       const dsp_uuid_t *node_uuid,
-		       const struct dsp_cb_data *cb_data,
+		       const void *cb_data,
 		       struct dsp_node_attr_in *attrs,
 		       void **ret_node);
 
@@ -177,6 +205,12 @@ bool dsp_register_notify(int handle,
 			 unsigned int notify_type,
 			 struct dsp_notification *info);
 
+bool dsp_node_register_notify(int handle,
+			      void *node_handle,
+			      unsigned int event_mask,
+			      unsigned int notify_type,
+			      struct dsp_notification *info);
+
 bool dsp_wait_for_events(int handle,
 			 struct dsp_notification **notifications,
 			 unsigned int count,
@@ -190,12 +224,28 @@ bool dsp_enum(int handle,
 	      unsigned int *ret_num);
 
 bool dsp_register(int handle,
-		  dsp_uuid_t *uuid,
+		  const dsp_uuid_t *uuid,
 		  enum dsp_dcd_object_type type,
 		  const char *path);
 
 bool dsp_unregister(int handle,
 		    dsp_uuid_t *uuid,
 		    enum dsp_dcd_object_type type);
+
+static inline bool
+dsp_send_message(int handle,
+		 void *node_handle,
+		 uint32_t cmd,
+		 uint32_t arg_1,
+		 uint32_t arg_2)
+{
+	dsp_msg_t msg;
+
+	msg.cmd = cmd;
+	msg.arg_1 = arg_1;
+	msg.arg_2 = arg_2;
+
+	return dsp_node_put_message(handle, node_handle, &msg, -1);
+}
 
 #endif /* DSP_BRIDGE_H */
