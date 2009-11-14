@@ -1,4 +1,6 @@
-CC := arm-linux-gcc
+CROSS_COMPILE ?= arm-linux-
+CC := $(CROSS_COMPILE)gcc
+
 CFLAGS := -O2 -Wall -Werror -ansi -std=c99
 
 CL6X := $(DSP_TOOLS)/bin/cl6x
