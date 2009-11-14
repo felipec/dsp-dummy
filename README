@@ -28,8 +28,4 @@ on the dspbridge_dsp package.
 
 As a result you'll have two binaries; 'dummy.dll64P' for dsp-side, and 'dummy' for arm-side.
 
-To load the dynamic node:
-
-/dspbridge/dynreg.out -r /lib/dsp/dummy.dll64P
-
-Now you can run the dummy test application.
+Simply copy 'dummy.dll64P' to '/lib/dsp' and then run the 'dummy' app.
