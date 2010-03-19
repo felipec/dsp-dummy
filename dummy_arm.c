@@ -32,6 +32,7 @@ static unsigned long input_buffer_size = 0x1000;
 static unsigned long output_buffer_size = 0x1000;
 static bool done;
 static int ntimes;
+static bool do_fault;
 
 static int dsp_handle;
 static void *proc;
@@ -96,8 +97,14 @@ configure_dsp_node(void *node,
 	dsp_msg_t msg;
 
 	msg.cmd = 0;
-	msg.arg_1 = (uint32_t) input_buffer->map;
-	msg.arg_2 = (uint32_t) output_buffer->map;
+	if (!do_fault) {
+		msg.arg_1 = (uint32_t) input_buffer->map;
+		msg.arg_2 = (uint32_t) output_buffer->map;
+	}
+	else {
+		msg.arg_1 = 0x12345678;
+		msg.arg_2 = 0x12345678;
+	}
 	dsp_node_put_message(dsp_handle, node, &msg, -1);
 }
 
@@ -245,6 +252,9 @@ handle_options(int *argc,
 			(*argv)++;
 			(*argc)--;
 		}
+
+		if (!strcmp(cmd, "-f") || !strcmp(cmd, "--fault"))
+			do_fault = 1;
 
 		(*argv)++;
 		(*argc)--;
