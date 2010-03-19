@@ -41,10 +41,10 @@ signal_handler(int signal)
 	done = true;
 }
 
-static inline void *
+static inline dsp_node_t *
 create_node(void)
 {
-	void *node;
+	dsp_node_t *node;
 	const dsp_uuid_t dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
 		{ 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
 
@@ -70,7 +70,7 @@ create_node(void)
 }
 
 static inline bool
-destroy_node(void *node)
+destroy_node(dsp_node_t *node)
 {
 	if (node) {
 		if (!dsp_node_free(dsp_handle, node)) {
@@ -98,7 +98,7 @@ configure_dsp_node(void *node,
 }
 
 static bool
-run_task(void *node,
+run_task(dsp_node_t *node,
 	 unsigned long times)
 {
 	unsigned long exit_status;
@@ -167,7 +167,7 @@ int
 main(int argc,
      char **argv)
 {
-	void *node;
+	dsp_node_t *node;
 	int ret = 0;
 
 	(void) signal(SIGINT, signal_handler);

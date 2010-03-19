@@ -40,6 +40,99 @@
 #include <sys/mman.h> /* for mmap */
 #endif
 
+/*
+ * Dspbridge ioctl numbering scheme
+ *
+ *    7                           0
+ *  ---------------------------------
+ *  |  Module   |   ioctl Number    |
+ *  ---------------------------------
+ *  | x | x | x | 0 | 0 | 0 | 0 | 0 |
+ *  ---------------------------------
+ */
+
+/* ioctl driver identifier */
+#define DB 0xDB
+
+/*
+ * Following are used to distinguish between module ioctls, this is needed
+ * in case new ioctls are introduced.
+ */
+#define DB_MODULE_MASK 0xE0
+#define DB_IOC_MASK    0x1F
+
+#ifdef NEW_API
+
+#include <linux/ioctl.h>
+
+/* ioctl module masks */
+#define DB_MGR  0x0
+#define DB_PROC 0x20
+#define DB_NODE 0x40
+#define DB_STRM 0x60
+#define DB_CMM  0x80
+
+/* Used to calculate the ioctl per dspbridge module */
+#define DB_IOC(module, num) \
+	(((module) & DB_MODULE_MASK) | ((num) & DB_IOC_MASK))
+
+#else /* NEW_API */
+
+#define DB_MGR  1
+#define DB_PROC 7
+#define DB_NODE 24
+#define DB_STRM 39
+#define DB_CMM  50
+
+#define DB_IOC(module, num)	((module) + (num))
+
+#undef _IOR
+#undef _IOW
+#undef _IOWR
+
+#define _IOR(type, nr, size)	(nr)
+#define _IOW(type, nr, size)	(nr)
+#define _IOWR(type, nr, size)	(nr)
+
+#endif /* NEW_API */
+
+/* MGR Module */
+#define MGR_WAIT		_IOWR(DB, DB_IOC(DB_MGR, 4), unsigned long)
+#define MGR_ENUMNODE_INFO	_IOWR(DB, DB_IOC(DB_MGR, 0), unsigned long)
+#define MGR_REGISTEROBJECT	_IOWR(DB, DB_IOC(DB_MGR, 2), unsigned long)
+#define MGR_UNREGISTEROBJECT	_IOWR(DB, DB_IOC(DB_MGR, 3), unsigned long)
+
+/* PROC Module */
+#define PROC_ATTACH		_IOWR(DB, DB_IOC(DB_PROC, 0), unsigned long)
+/* PROC_DETACH Deprecated */
+#define PROC_DETACH		_IOR(DB, DB_IOC(DB_PROC, 2), unsigned long)
+#define PROC_REGISTERNOTIFY	_IOWR(DB, DB_IOC(DB_PROC, 8), unsigned long)
+#define PROC_RSVMEM		_IOWR(DB, DB_IOC(DB_PROC, 10), unsigned long)
+#define PROC_UNRSVMEM		_IOW(DB, DB_IOC(DB_PROC, 11), unsigned long)
+#define PROC_MAPMEM		_IOWR(DB, DB_IOC(DB_PROC, 12), unsigned long)
+#define PROC_UNMAPMEM		_IOR(DB, DB_IOC(DB_PROC, 13), unsigned long)
+#define PROC_FLUSHMEMORY	_IOW(DB, DB_IOC(DB_PROC, 14), unsigned long)
+#define PROC_INVALIDATEMEMORY	_IOW(DB, DB_IOC(DB_PROC, 16), unsigned long)
+#define PROC_GET_STATE		_IOWR(DB, DB_IOC(DB_PROC, 5), unsigned long)
+#define PROC_ENUMRESOURCES	_IOWR(DB, DB_IOC(DB_PROC, 4), unsigned long)
+
+/* NODE Module */
+#define NODE_REGISTERNOTIFY	_IOWR(DB, DB_IOC(DB_NODE, 11), unsigned long)
+#define NODE_CREATE		_IOW(DB, DB_IOC(DB_NODE, 4), unsigned long)
+#define NODE_RUN		_IOW(DB, DB_IOC(DB_NODE, 12), unsigned long)
+#define NODE_TERMINATE		_IOWR(DB, DB_IOC(DB_NODE, 13), unsigned long)
+#define NODE_PUTMESSAGE		_IOW(DB, DB_IOC(DB_NODE, 10), unsigned long)
+#define NODE_GETMESSAGE		_IOWR(DB, DB_IOC(DB_NODE, 8), unsigned long)
+#define NODE_DELETE		_IOW(DB, DB_IOC(DB_NODE, 5), unsigned long)
+#define NODE_GETATTR		_IOWR(DB, DB_IOC(DB_NODE, 7), unsigned long)
+#define NODE_ALLOCMSGBUF	_IOWR(DB, DB_IOC(DB_NODE, 1), unsigned long)
+#define NODE_GETUUIDPROPS	_IOWR(DB, DB_IOC(DB_NODE, 14), unsigned long)
+#define NODE_ALLOCATE		_IOWR(DB, DB_IOC(DB_NODE, 0), unsigned long)
+
+/* CMM Module */
+#define CMM_GETHANDLE		_IOR(DB, DB_IOC(DB_CMM, 2), unsigned long)
+#define CMM_GETINFO		_IOR(DB, DB_IOC(DB_CMM, 3), unsigned long)
+
 int dsp_open(void)
 {
 	return open("/dev/DspBridge", O_RDWR);
@@ -67,7 +160,7 @@ bool dsp_attach(int handle,
 		.ret_handle = ret_handle,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 7, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_ATTACH, &arg));
 }
 
 struct proc_detach {
@@ -81,7 +174,7 @@ bool dsp_detach(int handle,
 		.proc_handle = proc_handle,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 9, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_DETACH, &arg));
 }
 
 struct register_notify {
@@ -104,7 +197,7 @@ bool dsp_register_notify(int handle,
 		.info = info,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 15, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_REGISTERNOTIFY, &arg));
 }
 
 struct node_register_notify {
@@ -115,19 +208,19 @@ struct node_register_notify {
 };
 
 bool dsp_node_register_notify(int handle,
-			      void *node_handle,
+			      dsp_node_t *node,
 			      unsigned int event_mask,
 			      unsigned int notify_type,
 			      struct dsp_notification *info)
 {
 	struct node_register_notify arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 		.event_mask = event_mask,
 		.notify_type = notify_type,
 		.info = info,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 35, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_REGISTERNOTIFY, &arg));
 }
 
 struct wait_for_events {
@@ -150,7 +243,7 @@ bool dsp_wait_for_events(int handle,
 		.timeout = timeout,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 5, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, MGR_WAIT, &arg));
 }
 
 struct enum_node {
@@ -173,7 +266,7 @@ bool dsp_enum(int handle,
 		.ret_num = ret_num,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 1, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, MGR_ENUMNODE_INFO, &arg));
 }
 
 struct register_object {
@@ -193,7 +286,7 @@ bool dsp_register(int handle,
 		.path = path,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 3, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, MGR_REGISTEROBJECT, &arg));
 }
 
 struct unregister_object {
@@ -210,7 +303,7 @@ bool dsp_unregister(int handle,
 		.type = type,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 4, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, MGR_UNREGISTEROBJECT, &arg));
 }
 
 struct node_create {
@@ -218,13 +311,13 @@ struct node_create {
 };
 
 bool dsp_node_create(int handle,
-		     void *node_handle)
+		     dsp_node_t *node)
 {
 	struct node_create arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 28, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_CREATE, &arg));
 }
 
 struct node_run {
@@ -232,13 +325,13 @@ struct node_run {
 };
 
 bool dsp_node_run(int handle,
-		  void *node_handle)
+		  dsp_node_t *node)
 {
 	struct node_run arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 36, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_RUN, &arg));
 }
 
 struct node_terminate {
@@ -247,15 +340,15 @@ struct node_terminate {
 };
 
 bool dsp_node_terminate(int handle,
-			void *node_handle,
+			dsp_node_t *node,
 			unsigned long *status)
 {
 	struct node_terminate arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 		.status = status,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 37, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_TERMINATE, &arg));
 }
 
 struct node_put_message {
@@ -265,17 +358,17 @@ struct node_put_message {
 };
 
 bool dsp_node_put_message(int handle,
-			  void *node_handle,
+			  dsp_node_t *node,
 			  const dsp_msg_t *message,
 			  unsigned int timeout)
 {
 	struct node_put_message arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 		.message = message,
 		.timeout = timeout,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 34, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_PUTMESSAGE, &arg));
 }
 
 struct node_get_message {
@@ -285,17 +378,17 @@ struct node_get_message {
 };
 
 bool dsp_node_get_message(int handle,
-			  void *node_handle,
+			  dsp_node_t *node,
 			  dsp_msg_t *message,
 			  unsigned int timeout)
 {
 	struct node_get_message arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 		.message = message,
 		.timeout = timeout,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 32, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_GETMESSAGE, &arg));
 }
 
 struct node_delete {
@@ -303,86 +396,37 @@ struct node_delete {
 };
 
 static inline bool dsp_node_delete(int handle,
-				   void *node_handle)
+				   dsp_node_t *node)
 {
 	struct node_delete arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 29, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_DELETE, &arg));
 }
 
 #ifdef ALLOCATE_SM
-enum dsp_node_state
-{
-	NODE_ALLOCATED,
-	NODE_CREATED,
-	NODE_RUNNING,
-	NODE_PAUSED,
-	NODE_DONE
-};
-
-enum dsp_connect_type
-{
-	CONNECTTYPE_NODEOUTPUT,
-	CONNECTTYPE_GPPOUTPUT,
-	CONNECTTYPE_NODEINPUT,
-	CONNECTTYPE_GPPINPUT
-};
-
-struct dsp_stream_connect
-{
-	unsigned long cb;
-	enum dsp_connect_type type;
-	unsigned int index;
-	void *node;
-	dsp_uuid_t node_id;
-	unsigned int stream_index;
-};
-
-struct dsp_node_info
-{
-	unsigned long cb;
-	struct dsp_ndb_props props;
-	unsigned int priority;
-	enum dsp_node_state state;
-	void *owner;
-	unsigned int num_streams;
-	struct dsp_stream_connect streams[16];
-	unsigned int node_env;
-};
-
-struct dsp_node_attr
-{
-	unsigned long cb;
-	struct dsp_node_attr_in attr_in;
-	unsigned long inputs;
-	unsigned long outputs;
-	struct dsp_node_info info;
-};
-
 struct node_get_attr {
 	void *node_handle;
 	struct dsp_node_attr *attr;
 	unsigned int attr_size;
 };
 
-static inline bool dsp_node_get_attr(int handle,
-				     void *node_handle,
-				     struct dsp_node_attr *attr,
-				     size_t attr_size)
+bool dsp_node_get_attr(int handle,
+		       dsp_node_t *node,
+		       struct dsp_node_attr *attr,
+		       size_t attr_size)
 {
 	struct node_get_attr arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 		.attr = attr,
 		.attr_size = attr_size,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 31, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_GETATTR, &arg));
 }
 
-struct dsp_buffer_attr
-{
+struct dsp_buffer_attr {
 	unsigned long cb;
 	unsigned int segment;
 	unsigned int alignment;
@@ -396,19 +440,19 @@ struct node_alloc_buf {
 };
 
 static inline bool dsp_node_alloc_buf(int handle,
-				      void *node_handle,
+				      dsp_node_t *node,
 				      size_t size,
 				      struct dsp_buffer_attr *attr,
 				      void **buffer)
 {
 	struct node_alloc_buf arg = {
-		.node_handle = node_handle,
+		.node_handle = node->handle,
 		.size = size,
 		.attr = attr,
 		.buffer = buffer,
 	};
 
-	if (!DSP_SUCCEEDED(ioctl(handle, 25, &arg))) {
+	if (!DSP_SUCCEEDED(ioctl(handle, NODE_ALLOCMSGBUF, &arg))) {
 		*buffer = NULL;
 		return false;
 	}
@@ -416,8 +460,7 @@ static inline bool dsp_node_alloc_buf(int handle,
 	return true;
 }
 
-struct dsp_cmm_seg_info
-{
+struct dsp_cmm_seg_info {
 	unsigned long base_pa;
 	unsigned long size;
 	unsigned long gpp_base_pa;
@@ -428,8 +471,7 @@ struct dsp_cmm_seg_info
 	unsigned long base_va;
 };
 
-struct dsp_cmm_info
-{
+struct dsp_cmm_info {
 	unsigned long segments;
 	unsigned long use_count;
 	unsigned long min_block_size;
@@ -459,38 +501,33 @@ static inline bool get_cmm_info(int handle,
 		.info = cmm_info,
 	};
 
-	if (!DSP_SUCCEEDED(ioctl(handle, 52, &cmm_arg))) {
+	if (!DSP_SUCCEEDED(ioctl(handle, CMM_GETHANDLE, &cmm_arg)))
 		return false;
-	}
 
 	cmm_info_arg.cmm = cmm;
-	if (!DSP_SUCCEEDED(ioctl(handle, 53, &cmm_info_arg))) {
+	if (!DSP_SUCCEEDED(ioctl(handle, CMM_GETINFO, &cmm_info_arg)))
 		return false;
-	}
 
 	return true;
 }
 
 static inline bool allocate_segments(int handle,
 				     void *proc_handle,
-				     void *node_handle)
+				     dsp_node_t *node)
 {
 	struct dsp_cmm_info cmm_info;
 	struct dsp_node_attr attr;
 	enum dsp_node_type node_type;
 
-	if (!get_cmm_info(handle, proc_handle, &cmm_info)) {
+	if (!get_cmm_info(handle, proc_handle, &cmm_info))
 		return false;
-	}
 
-	if (!dsp_node_get_attr(handle, node_handle, &attr, sizeof(attr))) {
+	if (!dsp_node_get_attr(handle, node, &attr, sizeof(attr)))
 		return false;
-	}
 
 	node_type = attr.info.props.uNodeType;
 
-	if ((node_type != DSP_NODE_DEVICE) && (cmm_info.segments > 0))
-	{
+	if ((node_type != DSP_NODE_DEVICE) && (cmm_info.segments > 0)) {
 		struct dsp_cmm_seg_info *seg;
 
 		seg = &cmm_info.info[0];
@@ -509,12 +546,15 @@ static inline bool allocate_segments(int handle,
 			buffer_attr.alignment = 0;
 			buffer_attr.segment = 1 | 0x10000000;
 			buffer_attr.cb = 0;
-			if (!dsp_node_alloc_buf(handle, node_handle, seg->size,
+			if (!dsp_node_alloc_buf(handle, node, seg->size,
 						&buffer_attr, &base))
 			{
 				munmap(base, seg->size);
 				return false;
 			}
+
+			node->msgbuf_addr = base;
+			node->msgbuf_size = seg->size;
 		}
 	}
 
@@ -540,7 +580,7 @@ static inline bool get_uuid_props(int handle,
 		.props = props,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 38, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, NODE_GETUUIDPROPS, &arg));
 }
 
 #define PG_SIZE_4K 4096
@@ -562,8 +602,9 @@ bool dsp_node_allocate(int handle,
 		       const dsp_uuid_t *node_uuid,
 		       const void *cb_data,
 		       struct dsp_node_attr_in *attrs,
-		       void **ret_node)
+		       dsp_node_t **ret_node)
 {
+	dsp_node_t *node;
 	void *node_handle = NULL;
 	struct node_allocate arg = {
 		.proc_handle = proc_handle,
@@ -600,7 +641,7 @@ bool dsp_node_allocate(int handle,
 	}
 #endif
 
-	if (!DSP_SUCCEEDED(ioctl(handle, 24, &arg))) {
+	if (!DSP_SUCCEEDED(ioctl(handle, NODE_ALLOCATE, &arg))) {
 		if (attrs) {
 			free(attrs->gpp_va);
 			attrs->gpp_va = NULL;
@@ -608,65 +649,29 @@ bool dsp_node_allocate(int handle,
 		return false;
 	}
 
+	node = calloc(1, sizeof(*node));
+	node->handle = node_handle;
+	node->heap = attrs->gpp_va;
+
 #ifdef ALLOCATE_SM
-	if (!allocate_segments(handle, proc_handle, node_handle)) {
-		dsp_node_delete(handle, node_handle);
+	if (!allocate_segments(handle, proc_handle, node)) {
+		dsp_node_delete(handle, node);
 		return false;
 	}
 #endif
 
-	*ret_node = node_handle;
+	*ret_node = node;
 
 	return true;
 }
 
 bool dsp_node_free(int handle,
-		   void *node_handle)
+		   dsp_node_t *node)
 {
-#ifdef ALLOCATE_SM
-	struct dsp_cmm_info cmm_info;
-	struct dsp_node_attr attr;
-	enum dsp_node_type node_type;
-
-	if (!get_cmm_info(handle, NULL, &cmm_info)) {
-		return false;
-	}
-
-	if (!dsp_node_get_attr(handle, node_handle, &attr, sizeof(attr))) {
-		return false;
-	}
-
-	node_type = attr.info.props.uNodeType;
-
-	if (node_type != DSP_NODE_DEVICE) {
-		struct dsp_cmm_seg_info *seg;
-
-		seg = &cmm_info.info[0];
-
-		if (seg->base_pa != 0 && seg->size > 0) {
-			void *base = NULL;
-			struct dsp_buffer_attr buffer_attr;
-
-			buffer_attr.alignment = 0;
-			buffer_attr.segment = 1 | 0x20000000;
-			if (!dsp_node_alloc_buf(handle, node_handle, 1,
-						&buffer_attr, &base))
-			{
-				return false;
-			}
-
-			if (base && munmap(base, seg->size) < 0) {
-				return false;
-			}
-		}
-	}
-#endif
-
-	dsp_node_delete(handle, node_handle);
-
-#ifdef ALLOCATE_HEAP
-	free(attr.attr_in.gpp_va);
-#endif
+	munmap(node->msgbuf_addr, node->msgbuf_size);
+	dsp_node_delete(handle, node);
+	free(node->heap);
+	free(node);
 
 	return true;
 }
@@ -688,7 +693,7 @@ bool dsp_reserve(int handle,
 		.addr = addr,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 17, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_RSVMEM, &arg));
 }
 
 struct unreserve_mem {
@@ -706,7 +711,7 @@ bool dsp_unreserve(int handle,
 		.addr = addr,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 18, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_UNRSVMEM, &arg));
 }
 
 struct map_mem {
@@ -735,7 +740,7 @@ bool dsp_map(int handle,
 		.attr = attr,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 19, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_MAPMEM, &arg));
 }
 
 struct unmap_mem {
@@ -753,7 +758,7 @@ bool dsp_unmap(int handle,
 		.map_addr = map_addr,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 20, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_UNMAPMEM, &arg));
 }
 
 struct flush_mem {
@@ -776,7 +781,7 @@ bool dsp_flush(int handle,
 		.flags = flags,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 21, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_FLUSHMEMORY, &arg));
 }
 
 struct invalidate_mem {
@@ -796,5 +801,54 @@ bool dsp_invalidate(int handle,
 		.size = size,
 	};
 
-	return DSP_SUCCEEDED(ioctl(handle, 23, &arg));
+	return DSP_SUCCEEDED(ioctl(handle, PROC_INVALIDATEMEMORY, &arg));
+}
+
+struct proc_get_info {
+	void *proc_handle;
+	unsigned type;
+	struct dsp_info *info;
+	unsigned size;
+};
+
+bool dsp_proc_get_info(int handle,
+		       void *proc_handle,
+		       unsigned type,
+		       struct dsp_info *info,
+		       unsigned size)
+{
+	struct proc_get_info arg = {
+		.proc_handle = proc_handle,
+		.type = type,
+		.info = info,
+		.size = size,
+	};
+
+	return DSP_SUCCEEDED(ioctl(handle, PROC_GET_STATE, &arg));
+}
+
+struct enum_nodes {
+	void *proc_handle;
+	void **node_table;
+	unsigned node_table_size;
+	unsigned *num_nodes;
+	unsigned *allocated;
+};
+
+bool dsp_enum_nodes(int handle,
+		    void *proc_handle,
+		    void **node_table,
+		    unsigned node_table_size,
+		    unsigned *num_nodes,
+		    unsigned *allocated)
+{
+	struct enum_nodes arg = {
+		.proc_handle = proc_handle,
+		.node_table = node_table,
+		.node_table_size = node_table_size,
+		.num_nodes = num_nodes,
+		.allocated = allocated,
+	};
+
+	return DSP_SUCCEEDED(ioctl(handle, PROC_ENUMRESOURCES, &arg));
 }
