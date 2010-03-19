@@ -651,7 +651,8 @@ bool dsp_node_allocate(int handle,
 
 	node = calloc(1, sizeof(*node));
 	node->handle = node_handle;
-	node->heap = attrs->gpp_va;
+	if (attrs)
+		node->heap = attrs->gpp_va;
 
 #ifdef ALLOCATE_SM
 	if (!allocate_segments(handle, proc_handle, node)) {
@@ -668,7 +669,9 @@ bool dsp_node_allocate(int handle,
 bool dsp_node_free(int handle,
 		   dsp_node_t *node)
 {
+#ifdef ALLOCATE_SM
 	munmap(node->msgbuf_addr, node->msgbuf_size);
+#endif
 	dsp_node_delete(handle, node);
 	free(node->heap);
 	free(node);
