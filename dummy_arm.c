@@ -35,6 +35,9 @@ static int ntimes;
 
 static int dsp_handle;
 static void *proc;
+struct dsp_notification *events[3];
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static void
 signal_handler(int signal)
@@ -99,6 +102,59 @@ configure_dsp_node(void *node,
 }
 
 static bool
+register_msgs(dsp_node_t *node)
+{
+	events[0] = calloc(1, sizeof(struct dsp_notification));
+	if (!dsp_node_register_notify(dsp_handle, node,
+				      DSP_NODEMESSAGEREADY, 1,
+				      events[0]))
+		return false;
+
+	events[1] = calloc(1, sizeof(struct dsp_notification));
+	if (!dsp_register_notify(dsp_handle, proc,
+				 DSP_MMUFAULT, 1,
+				 events[1]))
+		return false;
+
+	events[2] = calloc(1, sizeof(struct dsp_notification));
+	if (!dsp_register_notify(dsp_handle, proc,
+				 DSP_SYSERROR, 1,
+				 events[2]))
+		return false;
+
+	return true;
+}
+
+static bool
+check_events(dsp_node_t *node,
+	     dsp_msg_t *msg)
+{
+	unsigned int index = 0;
+	pr_debug("waiting for events");
+	if (!dsp_wait_for_events(dsp_handle, events, 3, &index, 1000)) {
+		pr_warning("failed waiting for events");
+		return false;
+	}
+
+	switch (index) {
+	case 0:
+		dsp_node_get_message(dsp_handle, node, msg, 100);
+		pr_debug("got dsp message: 0x%0x 0x%0x 0x%0x",
+			 msg->cmd, msg->arg_1, msg->arg_2);
+		return true;
+	case 1:
+		pr_err("got DSP MMUFAULT");
+		return false;
+	case 2:
+		pr_err("got DSP SYSERROR");
+		return false;
+	default:
+		pr_err("wrong event index");
+		return false;
+	}
+}
+
+static bool
 run_task(dsp_node_t *node,
 	 unsigned long times)
 {
@@ -111,6 +167,8 @@ run_task(dsp_node_t *node,
 		pr_err("dsp node run failed");
 		return false;
 	}
+
+	register_msgs(node);
 
 	pr_info("dsp node running");
 
@@ -140,7 +198,10 @@ run_task(dsp_node_t *node,
 		msg.cmd = 1;
 		msg.arg_1 = input_buffer->size;
 		dsp_node_put_message(dsp_handle, node, &msg, -1);
-		dsp_node_get_message(dsp_handle, node, &msg, -1);
+		if (!check_events(node, &msg)) {
+			done = true;
+			break;
+		}
 		dmm_buffer_invalidate(output_buffer, output_buffer->size);
 
 		if (--times == 0)
@@ -196,6 +257,7 @@ main(int argc,
 {
 	dsp_node_t *node;
 	int ret = 0;
+	int i;
 
 	signal(SIGINT, signal_handler);
 
@@ -236,6 +298,9 @@ leave:
 		}
 		proc = NULL;
 	}
+
+	for (i = 0; i < ARRAY_SIZE(events); i++)
+		free(events[i]);
 
 	if (dsp_handle > 0) {
 		if (dsp_close(dsp_handle) < 0) {
