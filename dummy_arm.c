@@ -205,15 +205,16 @@ leave:
 	if (proc) {
 		if (!dsp_detach(dsp_handle, proc)) {
 			pr_err("dsp detach failed");
-			ret = 1;
-			goto leave;
+			ret = -1;
 		}
 		proc = NULL;
 	}
 
-	if (dsp_close(dsp_handle) < 0) {
-		pr_err("dsp close failed");
-		return -1;
+	if (dsp_handle > 0) {
+		if (dsp_close(dsp_handle) < 0) {
+			pr_err("dsp close failed");
+			return -1;
+		}
 	}
 
 	return ret;
