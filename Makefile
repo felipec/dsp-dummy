@@ -9,10 +9,6 @@ CL6X := $(DSP_TOOLS)/bin/cl6x
 LNK6X := $(DSP_TOOLS)/bin/lnk6x
 DLLCREATE := $(DSP_DOFFBUILD)/bin/DLLcreate
 
-ifdef DEBUG
-CFLAGS += -DDEBUG
-endif
-
 ifdef NEW
   override CFLAGS += -DNEW_API
 endif

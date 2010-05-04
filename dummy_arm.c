@@ -162,6 +162,23 @@ run_task(dsp_node_t *node,
 	return true;
 }
 
+static void
+handle_options(int *argc,
+	       const char ***argv)
+{
+	while (*argc > 0) {
+		const char *cmd = (*argv)[0];
+		if (cmd[0] != '-')
+			break;
+
+		if (!strcmp(cmd, "-d") || !strcmp(cmd, "--debug"))
+			debug_level = 3;
+
+		(*argv)++;
+		(*argc)--;
+	}
+}
+
 int
 main(int argc,
      const char **argv)
@@ -171,11 +188,10 @@ main(int argc,
 
 	signal(SIGINT, signal_handler);
 
-#ifdef DEBUG
-	debug_level = 3;
-#else
 	debug_level = 2;
-#endif
+
+	argc--; argv++;
+	handle_options(&argc, &argv);
 
 	dsp_handle = dsp_open();
 
