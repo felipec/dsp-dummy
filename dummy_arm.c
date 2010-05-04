@@ -31,6 +31,7 @@
 static unsigned long input_buffer_size = 0x1000;
 static unsigned long output_buffer_size = 0x1000;
 static bool done;
+static int ntimes;
 
 static int dsp_handle;
 static void *proc;
@@ -174,6 +175,16 @@ handle_options(int *argc,
 		if (!strcmp(cmd, "-d") || !strcmp(cmd, "--debug"))
 			debug_level = 3;
 
+		if (!strcmp(cmd, "-n") || !strcmp(cmd, "--ntimes")) {
+			if (*argc < 2) {
+				pr_err("bad option");
+				exit(-1);
+			}
+			ntimes = atoi((*argv)[1]);
+			(*argv)++;
+			(*argc)--;
+		}
+
 		(*argv)++;
 		(*argc)--;
 	}
@@ -189,6 +200,7 @@ main(int argc,
 	signal(SIGINT, signal_handler);
 
 	debug_level = 2;
+	ntimes = 1000;
 
 	argc--; argv++;
 	handle_options(&argc, &argv);
@@ -213,7 +225,7 @@ main(int argc,
 		goto leave;
 	}
 
-	run_task(node, 24 * 60 * 10);
+	run_task(node, ntimes);
 	destroy_node(node);
 
 leave:
