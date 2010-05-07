@@ -24,18 +24,16 @@
 #include <stdlib.h>
 
 unsigned int debug_level = 1;
-const char *debug_id = "log";
 
 static inline const char *
 log_level_to_string(unsigned int level)
 {
-	switch (level)
-	{
-		case 0: return "error"; break;
-		case 1: return "warning"; break;
-		case 2: return "info"; break;
-		case 3: return "debug"; break;
-		default: return NULL; break;
+	switch (level) {
+	case 0: return "error"; break;
+	case 1: return "warning"; break;
+	case 2: return "info"; break;
+	case 3: return "debug"; break;
+	default: return NULL; break;
 	}
 }
 
@@ -58,7 +56,7 @@ pr_helper(unsigned int level,
 	vasprintf(&tmp, fmt, args);
 
 	fprintf(stderr, "%s %s:%d:%s() %s\n",
-		log_level_to_string (level),
+		log_level_to_string(level),
 		file, line, function,
 		tmp);
 

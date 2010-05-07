@@ -23,7 +23,6 @@
 #define LOG_H
 
 extern int debug_level;
-extern const char *debug_id;
 
 void
 pr_helper(unsigned int level,

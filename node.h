@@ -23,8 +23,7 @@
 
 #include <stdint.h>
 
-typedef struct
-{
+typedef struct {
 	uint32_t cmd;
 	uint32_t arg_1;
 	uint32_t arg_2;

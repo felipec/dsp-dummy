@@ -46,7 +46,7 @@ create_node(void)
 {
 	dsp_node_t *node;
 	const dsp_uuid_t dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
-		{ 0x08, 0x00, 0x20, 0x0c, 0x9a,0x66 } };
+		{ 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66 } };
 
 	if (!dsp_register(dsp_handle, &dummy_uuid, DSP_DCD_LIBRARYTYPE, "/lib/dsp/dummy.dll64P"))
 		return false;
@@ -130,9 +130,8 @@ run_task(dsp_node_t *node,
 		{
 			static unsigned char foo;
 			unsigned int i;
-			for (i = 0; i < input_buffer->size; i++) {
+			for (i = 0; i < input_buffer->size; i++)
 				((char *) input_buffer->data)[i] = foo;
-			}
 			foo++;
 		}
 #endif
@@ -153,7 +152,7 @@ run_task(dsp_node_t *node,
 	dmm_buffer_free(output_buffer);
 	dmm_buffer_free(input_buffer);
 
-	if (!dsp_node_terminate (dsp_handle, node, &exit_status)) {
+	if (!dsp_node_terminate(dsp_handle, node, &exit_status)) {
 		pr_err("dsp node terminate failed: %lx", exit_status);
 		return false;
 	}
@@ -165,12 +164,12 @@ run_task(dsp_node_t *node,
 
 int
 main(int argc,
-     char **argv)
+     const char **argv)
 {
 	dsp_node_t *node;
 	int ret = 0;
 
-	(void) signal(SIGINT, signal_handler);
+	signal(SIGINT, signal_handler);
 
 #ifdef DEBUG
 	debug_level = 3;
