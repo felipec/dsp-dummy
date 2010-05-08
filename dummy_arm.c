@@ -172,8 +172,10 @@ handle_options(int *argc,
 		if (cmd[0] != '-')
 			break;
 
+#ifdef DEBUG
 		if (!strcmp(cmd, "-d") || !strcmp(cmd, "--debug"))
 			debug_level = 3;
+#endif
 
 		if (!strcmp(cmd, "-n") || !strcmp(cmd, "--ntimes")) {
 			if (*argc < 2) {
@@ -199,7 +201,9 @@ main(int argc,
 
 	signal(SIGINT, signal_handler);
 
+#ifdef DEBUG
 	debug_level = 2;
+#endif
 	ntimes = 1000;
 
 	argc--; argv++;
