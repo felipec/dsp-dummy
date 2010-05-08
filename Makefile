@@ -1,7 +1,7 @@
 CROSS_COMPILE ?= arm-linux-
 CC := $(CROSS_COMPILE)gcc
 
-CFLAGS := -O2 -Wall -Werror -ansi -std=c99
+CFLAGS := -O2 -Wall -Wextra -Wno-unused-parameter -std=c99
 
 override CFLAGS += -D_GNU_SOURCE
 
@@ -35,12 +35,12 @@ clean:
 	$(QUIET_CLEAN)$(RM) $(bins) *.o *.o64P *.x64P
 
 # pretty print
-V = @
-Q = $(V:y=)
-QUIET_CC    = $(Q:@=@echo '   CC         '$@;)
-QUIET_LINK  = $(Q:@=@echo '   LINK       '$@;)
-QUIET_CLEAN = $(Q:@=@echo '   CLEAN      '$@;)
-QUIET_DLL   = $(Q:@=@echo '   DLLCREATE  '$@;)
+ifndef V
+QUIET_CC    = @echo '   CC         '$@;
+QUIET_LINK  = @echo '   LINK       '$@;
+QUIET_CLEAN = @echo '   CLEAN      '$@;
+QUIET_DLL   = @echo '   DLLCREATE  '$@;
+endif
 
 %.o64P:: %.s
 	$(QUIET_CC)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
