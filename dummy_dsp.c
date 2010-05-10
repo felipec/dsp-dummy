@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2008-2009 Nokia Corporation.
+ * Copyright (C) 2008-2009 Nokia Corporation
+ * Copyright (C) 2009 Igalia S.L
  *
  * Author: Felipe Contreras <felipe.contreras@nokia.com>
  *
@@ -38,9 +39,11 @@ unsigned int
 dummy_execute(void *env)
 {
 	dsp_msg_t msg;
+	dsp_mem_stat_t mem;
 	void *input;
 	void *output;
 	unsigned char done = 0;
+	unsigned int c = 0;
 
 	while (!done) {
 		NODE_getMsg(env, &msg, (unsigned) -1);
@@ -63,6 +66,14 @@ dummy_execute(void *env)
 				NODE_putMsg(env, NULL, &msg, 0);
 				break;
 			}
+		case 2:
+			MEM_stat(0, &mem);
+			msg.cmd = 1;
+			msg.arg_1 = c++;
+			msg.arg_2 = mem.size - mem.used;
+
+			NODE_putMsg(env, 0, &msg, 0);
+			break;
 		case 0x80000000:
 			done = 1;
 			break;

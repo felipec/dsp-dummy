@@ -29,10 +29,19 @@ typedef struct {
 	uint32_t arg_2;
 } dsp_msg_t;
 
+typedef struct {
+        unsigned long size;
+        unsigned long used;
+        size_t length;
+        int space;
+} dsp_mem_stat_t;
+
 extern unsigned short NODE_getMsg(void *node, dsp_msg_t *msg, unsigned int timeout);
 extern unsigned short NODE_putMsg(void *node, void *dest, dsp_msg_t *msg, unsigned int timeout);
 
 extern void BCACHE_inv(void *ptr, size_t size, unsigned short wait);
 extern void BCACHE_wbInv(void *ptr, size_t size, unsigned short wait);
+
+extern unsigned short MEM_stat(int id, dsp_mem_stat_t *statbuf);
 
 #endif /* NODE_H */
