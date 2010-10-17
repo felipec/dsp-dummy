@@ -114,11 +114,14 @@ run_task(dsp_node_t *node,
 
 	pr_info("dsp node running");
 
-	input_buffer = dmm_buffer_new(dsp_handle, proc);
-	output_buffer = dmm_buffer_new(dsp_handle, proc);
+	input_buffer = dmm_buffer_new(dsp_handle, proc, DMA_TO_DEVICE);
+	output_buffer = dmm_buffer_new(dsp_handle, proc, DMA_FROM_DEVICE);
 
 	dmm_buffer_allocate(input_buffer, input_buffer_size);
 	dmm_buffer_allocate(output_buffer, output_buffer_size);
+
+	dmm_buffer_map(output_buffer);
+	dmm_buffer_map(input_buffer);
 
 	configure_dsp_node(node, input_buffer, output_buffer);
 
@@ -136,12 +139,14 @@ run_task(dsp_node_t *node,
 			foo++;
 		}
 #endif
-		dmm_buffer_flush(input_buffer, input_buffer->size);
+		dmm_buffer_begin(input_buffer, input_buffer->size);
+		dmm_buffer_begin(output_buffer, output_buffer->size);
 		msg.cmd = 1;
 		msg.arg_1 = input_buffer->size;
 		dsp_node_put_message(dsp_handle, node, &msg, -1);
 		dsp_node_get_message(dsp_handle, node, &msg, -1);
-		dmm_buffer_invalidate(output_buffer, output_buffer->size);
+		dmm_buffer_end(input_buffer, input_buffer->size);
+		dmm_buffer_end(output_buffer, output_buffer->size);
 
 		if (--times == 0)
 			break;
