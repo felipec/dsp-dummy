@@ -1,22 +1,13 @@
 /*
- * Copyright (C) 2008-2009 Nokia Corporation.
+ * Copyright (C) 2009-2010 Felipe Contreras
+ * Copyright (C) 2009-2010 Nokia Corporation
+ * Copyright (C) 2009 Igalia S.L
  *
  * Author: Felipe Contreras <felipe.contreras@nokia.com>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation
- * version 2.1 of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
+ * This file may be used under the terms of the GNU Lesser General Public
+ * License version 2.1, a copy of which is found in LICENSE included in the
+ * packaging of this file.
  */
 
 #include <stdlib.h>
@@ -87,8 +78,8 @@ destroy_node(struct dsp_node *node)
 
 static inline void
 configure_dsp_node(void *node,
-		   dmm_buffer_t *input_buffer,
-		   dmm_buffer_t *output_buffer)
+		dmm_buffer_t *input_buffer,
+		dmm_buffer_t *output_buffer)
 {
 	struct dsp_msg msg;
 
@@ -100,7 +91,7 @@ configure_dsp_node(void *node,
 
 static bool
 run_task(struct dsp_node *node,
-	 unsigned long times)
+		unsigned long times)
 {
 	unsigned long exit_status;
 
@@ -132,7 +123,7 @@ run_task(struct dsp_node *node,
 
 #ifdef FILL_DATA
 		{
-			static unsigned char foo;
+			static unsigned char foo = 1;
 			unsigned int i;
 			for (i = 0; i < input_buffer->size; i++)
 				((char *) input_buffer->data)[i] = foo;
@@ -168,9 +159,7 @@ run_task(struct dsp_node *node,
 	return true;
 }
 
-static void
-handle_options(int *argc,
-	       const char ***argv)
+static void handle_options(int *argc, const char ***argv)
 {
 	while (*argc > 0) {
 		const char *cmd = (*argv)[0];
@@ -179,7 +168,7 @@ handle_options(int *argc,
 
 #ifdef DEBUG
 		if (!strcmp(cmd, "-d") || !strcmp(cmd, "--debug"))
-			debug_level = 3;
+			debug_level = 4;
 #endif
 
 		if (!strcmp(cmd, "-n") || !strcmp(cmd, "--ntimes")) {
@@ -197,9 +186,7 @@ handle_options(int *argc,
 	}
 }
 
-int
-main(int argc,
-     const char **argv)
+int main(int argc, const char *argv[])
 {
 	struct dsp_node *node;
 	int ret = 0;
@@ -207,7 +194,7 @@ main(int argc,
 	signal(SIGINT, signal_handler);
 
 #ifdef DEBUG
-	debug_level = 2;
+	debug_level = 3;
 #endif
 	ntimes = 1000;
 
