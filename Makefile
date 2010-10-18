@@ -1,17 +1,22 @@
 CROSS_COMPILE ?= arm-linux-
 CC := $(CROSS_COMPILE)gcc
 
-CFLAGS := -O2 -Wall -Werror -ansi -std=c99
+CFLAGS := -O2 -Wall -Wextra -Wno-unused-parameter -std=c99
+LDFLAGS := -Wl,--as-needed
 
 override CFLAGS += -D_GNU_SOURCE
+
+DSP_API := 1
+
+override CFLAGS += -DDSP_API=$(DSP_API)
+
+ifdef DEBUG
+  override CFLAGS += -DDEBUG
+endif
 
 CL6X := $(DSP_TOOLS)/bin/cl6x
 LNK6X := $(DSP_TOOLS)/bin/lnk6x
 DLLCREATE := $(DSP_DOFFBUILD)/bin/DLLcreate
-
-ifdef NEW
-  override CFLAGS += -DNEW_API
-endif
 
 all:
 
@@ -24,29 +29,25 @@ bins += dummy
 dummy.x64P: dummy_dsp.o64P dummy_bridge.o64P
 
 dummy.dll64P: dummy.x64P
-dummy.dll64P: CFLAGS :=
-dummy.dll64P: INCLUDES := -I$(DSP_TOOLS)/include
+dummy.dll64P: override CFLAGS := -I$(DSP_TOOLS)/include
 
 bins += dummy.dll64P
 
 all: $(bins)
 
-clean:
-	$(QUIET_CLEAN)$(RM) $(bins) *.o *.o64P *.x64P
-
 # pretty print
-V = @
-Q = $(V:y=)
-QUIET_CC    = $(Q:@=@echo '   CC         '$@;)
-QUIET_LINK  = $(Q:@=@echo '   LINK       '$@;)
-QUIET_CLEAN = $(Q:@=@echo '   CLEAN      '$@;)
-QUIET_DLL   = $(Q:@=@echo '   DLLCREATE  '$@;)
+ifndef V
+QUIET_CC    = @echo '   CC         '$@;
+QUIET_LINK  = @echo '   LINK       '$@;
+QUIET_CLEAN = @echo '   CLEAN      '$@;
+QUIET_DLL   = @echo '   DLLCREATE  '$@;
+endif
 
 %.o64P:: %.s
-	$(QUIET_CC)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
+	$(QUIET_CC)$(CL6X) $(CFLAGS) -mv=64p -eo.o64P -c $<
 
 %.o64P:: %.c
-	$(QUIET_CC)$(CL6X) $(CFLAGS) $(INCLUDES) -mv=64p -eo.o64P -c $<
+	$(QUIET_CC)$(CL6X) $(CFLAGS) -mv=64p -eo.o64P -c $<
 
 %.x64P::
 	$(QUIET_LINK)$(LNK6X) -r -cr --localize='$$bss' -o $@ $+
@@ -55,7 +56,12 @@ QUIET_DLL   = $(Q:@=@echo '   DLLCREATE  '$@;)
 	$(QUIET_DLL)$(DLLCREATE) $< -o=$@
 
 %.o:: %.c
-	$(QUIET_CC)$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
+	$(QUIET_CC)$(CC) $(CFLAGS) -MMD -o $@ -c $<
 
 dummy:
-	$(QUIET_CC)$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(QUIET_LINK)$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean:
+	$(QUIET_CLEAN)$(RM) $(bins) *.o *.o64P *.x64P
+
+-include *.d

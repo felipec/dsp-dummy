@@ -1,22 +1,13 @@
 /*
- * Copyright (C) 2008-2009 Nokia Corporation.
+ * Copyright (C) 2009-2010 Felipe Contreras
+ * Copyright (C) 2009-2010 Nokia Corporation
+ * Copyright (C) 2009 Igalia S.L
  *
  * Author: Felipe Contreras <felipe.contreras@nokia.com>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation
- * version 2.1 of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
+ * This file may be used under the terms of the GNU Lesser General Public
+ * License version 2.1, a copy of which is found in LICENSE included in the
+ * packaging of this file.
  */
 
 #include <stdlib.h>
@@ -42,11 +33,11 @@ signal_handler(int signal)
 	done = true;
 }
 
-static inline dsp_node_t *
+static inline struct dsp_node *
 create_node(void)
 {
-	dsp_node_t *node;
-	const dsp_uuid_t dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
+	struct dsp_node *node;
+	const struct dsp_uuid dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
 		{ 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66 } };
 
 	if (!dsp_register(dsp_handle, &dummy_uuid, DSP_DCD_LIBRARYTYPE, "/lib/dsp/dummy.dll64P"))
@@ -71,7 +62,7 @@ create_node(void)
 }
 
 static inline bool
-destroy_node(dsp_node_t *node)
+destroy_node(struct dsp_node *node)
 {
 	if (node) {
 		if (!dsp_node_free(dsp_handle, node)) {
@@ -87,10 +78,10 @@ destroy_node(dsp_node_t *node)
 
 static inline void
 configure_dsp_node(void *node,
-		   dmm_buffer_t *input_buffer,
-		   dmm_buffer_t *output_buffer)
+		dmm_buffer_t *input_buffer,
+		dmm_buffer_t *output_buffer)
 {
-	dsp_msg_t msg;
+	struct dsp_msg msg;
 
 	msg.cmd = 0;
 	msg.arg_1 = (uint32_t) input_buffer->map;
@@ -99,8 +90,8 @@ configure_dsp_node(void *node,
 }
 
 static bool
-run_task(dsp_node_t *node,
-	 unsigned long times)
+run_task(struct dsp_node *node,
+		unsigned long times)
 {
 	unsigned long exit_status;
 
@@ -114,34 +105,39 @@ run_task(dsp_node_t *node,
 
 	pr_info("dsp node running");
 
-	input_buffer = dmm_buffer_new(dsp_handle, proc);
-	output_buffer = dmm_buffer_new(dsp_handle, proc);
+	input_buffer = dmm_buffer_new(dsp_handle, proc, DMA_TO_DEVICE);
+	output_buffer = dmm_buffer_new(dsp_handle, proc, DMA_FROM_DEVICE);
 
 	dmm_buffer_allocate(input_buffer, input_buffer_size);
 	dmm_buffer_allocate(output_buffer, output_buffer_size);
+
+	dmm_buffer_map(output_buffer);
+	dmm_buffer_map(input_buffer);
 
 	configure_dsp_node(node, input_buffer, output_buffer);
 
 	pr_info("running %lu times", times);
 
 	while (!done) {
-		dsp_msg_t msg;
+		struct dsp_msg msg;
 
 #ifdef FILL_DATA
 		{
-			static unsigned char foo;
+			static unsigned char foo = 1;
 			unsigned int i;
 			for (i = 0; i < input_buffer->size; i++)
 				((char *) input_buffer->data)[i] = foo;
 			foo++;
 		}
 #endif
-		dmm_buffer_flush(input_buffer, input_buffer->size);
+		dmm_buffer_begin(input_buffer, input_buffer->size);
+		dmm_buffer_begin(output_buffer, output_buffer->size);
 		msg.cmd = 1;
 		msg.arg_1 = input_buffer->size;
 		dsp_node_put_message(dsp_handle, node, &msg, -1);
 		dsp_node_get_message(dsp_handle, node, &msg, -1);
-		dmm_buffer_invalidate(output_buffer, output_buffer->size);
+		dmm_buffer_end(input_buffer, input_buffer->size);
+		dmm_buffer_end(output_buffer, output_buffer->size);
 
 		if (--times == 0)
 			break;
@@ -163,17 +159,17 @@ run_task(dsp_node_t *node,
 	return true;
 }
 
-static void
-handle_options(int *argc,
-	       const char ***argv)
+static void handle_options(int *argc, const char ***argv)
 {
 	while (*argc > 0) {
 		const char *cmd = (*argv)[0];
 		if (cmd[0] != '-')
 			break;
 
+#ifdef DEBUG
 		if (!strcmp(cmd, "-d") || !strcmp(cmd, "--debug"))
-			debug_level = 3;
+			debug_level = 4;
+#endif
 
 		if (!strcmp(cmd, "-n") || !strcmp(cmd, "--ntimes")) {
 			if (*argc < 2) {
@@ -190,16 +186,16 @@ handle_options(int *argc,
 	}
 }
 
-int
-main(int argc,
-     const char **argv)
+int main(int argc, const char *argv[])
 {
-	dsp_node_t *node;
+	struct dsp_node *node;
 	int ret = 0;
 
 	signal(SIGINT, signal_handler);
 
-	debug_level = 2;
+#ifdef DEBUG
+	debug_level = 3;
+#endif
 	ntimes = 1000;
 
 	argc--; argv++;
