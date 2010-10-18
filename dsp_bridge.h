@@ -1,22 +1,11 @@
 /*
- * Copyright (C) 2009 Felipe Contreras
+ * Copyright (C) 2009-2010 Felipe Contreras
  *
  * Author: Felipe Contreras <felipe.contreras@gmail.com>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation
- * version 2.1 of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
+ * This file may be used under the terms of the GNU Lesser General Public
+ * License version 2.1, a copy of which is found in LICENSE included in the
+ * packaging of this file.
  */
 
 #ifndef DSP_BRIDGE_H
@@ -28,35 +17,35 @@
 
 #define ALLOCATE_HEAP
 
-#define DSP_SUCCEEDED(x) ((int)(x) >= 0)
-#define DSP_FAILED(x) ((int)(x) < 0)
-
 #define DSP_MMUFAULT 0x00000010
 #define DSP_SYSERROR 0x00000020
 #define DSP_NODEMESSAGEREADY 0x00000200
 
-typedef struct {
+#define MAX_PROFILES 16
+#define DSP_MAXNAMELEN 32
+
+struct dsp_uuid {
 	uint32_t field_1;
 	uint16_t field_2;
 	uint16_t field_3;
 	uint8_t field_4;
 	uint8_t field_5;
 	uint8_t field_6[6];
-} dsp_uuid_t;
+};
 
-typedef struct {
+struct dsp_node {
 	void *handle;
 	void *heap;
 	void *msgbuf_addr;
 	size_t msgbuf_size;
-} dsp_node_t;
+};
 
 /* note: cmd = 0x20000000 has special handling */
-typedef struct {
+struct dsp_msg {
 	uint32_t cmd;
 	uint32_t arg_1;
 	uint32_t arg_2;
-} dsp_msg_t;
+};
 
 struct dsp_notification {
 	char *name;
@@ -89,40 +78,42 @@ enum dsp_node_type {
 };
 
 #ifdef ALLOCATE_HEAP
-struct DSP_RESOURCEREQMTS {
-	unsigned long cbStruct;
-	unsigned int uStaticDataSize;
-	unsigned int uGlobalDataSize;
-	unsigned int uProgramMemSize;
-	unsigned int uWCExecutionTime;
-	unsigned int uWCPeriod;
-	unsigned int uWCDeadline;
-	unsigned int uAvgExectionTime;
-	unsigned int uMinimumPeriod;
+/* The dsp_resourcereqmts structure for node's resource requirements */
+struct dsp_resourcereqmts {
+	uint32_t cb_struct;
+	uint32_t static_data_size;
+	uint32_t global_data_size;
+	uint32_t program_mem_size;
+	uint32_t uwc_execution_time;
+	uint32_t uwc_period;
+	uint32_t uwc_deadline;
+	uint32_t avg_exection_time;
+	uint32_t minimum_period;
 };
 
-struct DSP_NODEPROFS {
-	unsigned int ulHeapSize;
+struct dsp_nodeprofs {
+	uint32_t heap_size;
 };
 
+/* The dsp_ndb_props structure reports the attributes of a node */
 struct dsp_ndb_props {
-	unsigned long cbStruct;
-	dsp_uuid_t uiNodeID;
-	char acName[32];
-	enum dsp_node_type uNodeType;
-	unsigned int bCacheOnGPP;
-	struct DSP_RESOURCEREQMTS dspResourceReqmts;
-	int iPriority;
-	unsigned int uStackSize;
-	unsigned int uSysStackSize;
-	unsigned int uStackSeg;
-	unsigned int uMessageDepth;
-	unsigned int uNumInputStreams;
-	unsigned int uNumOutputStreams;
-	unsigned int uTimeout;
-	unsigned int uCountProfiles; /* Number of supported profiles */
-	struct DSP_NODEPROFS aProfiles[16];	/* Array of profiles */
-	unsigned int uStackSegName; /* Stack Segment Name */
+	uint32_t cb_struct;
+	struct dsp_uuid node_id;
+	char ac_name[DSP_MAXNAMELEN];
+	enum dsp_node_type ntype;
+	uint32_t cache_on_gpp;
+	struct dsp_resourcereqmts dsp_resource_reqmts;
+	int32_t prio;
+	uint32_t stack_size;
+	uint32_t sys_stack_size;
+	uint32_t stack_seg;
+	uint32_t message_depth;
+	uint32_t num_input_streams;
+	uint32_t num_output_streams;
+	uint32_t timeout;
+	uint32_t count_profiles; /* Number of supported profiles */
+	struct dsp_nodeprofs node_profiles[MAX_PROFILES]; /* Array of profiles */
+	uint32_t stack_seg_name; /* Stack Segment Name */
 };
 #endif
 
@@ -167,8 +158,53 @@ struct dsp_stream_connect {
 	enum dsp_connect_type type;
 	unsigned int index;
 	void *node_handle;
-	dsp_uuid_t node_id;
+	struct dsp_uuid node_id;
 	unsigned int stream_index;
+};
+
+enum dsp_stream_mode {
+	STRMMODE_PROCCOPY,
+	STRMMODE_ZEROCOPY,
+	STRMMODE_LDMA,
+	STRMMODE_RDMA
+};
+
+struct dsp_stream_attr {
+	unsigned int seg_id;
+	unsigned int buf_size;
+	unsigned int num_bufs;
+	unsigned int alignment;
+	unsigned int timeout;
+	enum dsp_stream_mode mode;
+	unsigned int dma_chnl_id;
+	unsigned int dma_priority;
+};
+
+struct dsp_stream_attr_in {
+	unsigned long cb;
+	unsigned int timeout;
+	unsigned int segment;
+	unsigned int alignment;
+	unsigned int num_bufs;
+	enum dsp_stream_mode mode;
+	unsigned int dma_chnl_id;
+	unsigned int dma_priority;
+};
+
+enum dsp_stream_state {
+	STREAM_IDLE,
+	STREAM_READY,
+	STREAM_PENDING,
+	STREAM_DONE
+};
+
+struct dsp_stream_info {
+	unsigned long cb;
+	unsigned int num_bufs_allowed;
+	unsigned int num_bufs_in_stream;
+	unsigned long num_bytes;
+	void *sync_handle;
+	enum dsp_stream_state state;
 };
 
 enum dsp_node_state {
@@ -210,115 +246,134 @@ bool dsp_attach(int handle,
 bool dsp_detach(int handle,
 		void *proc_handle);
 
+bool dsp_start(int handle,
+		void *proc_handle);
+
+bool dsp_stop(int handle,
+		void *proc_handle);
+
+bool dsp_load(int handle,
+		void *proc_handle,
+		int argc, char **argv,
+		char **env);
+
 bool dsp_node_allocate(int handle,
-		       void *proc_handle,
-		       const dsp_uuid_t *node_uuid,
-		       const void *cb_data,
-		       struct dsp_node_attr_in *attrs,
-		       dsp_node_t **ret_node);
+		void *proc_handle,
+		const struct dsp_uuid *node_uuid,
+		const void *cb_data,
+		struct dsp_node_attr_in *attrs,
+		struct dsp_node **ret_node);
 
 bool dsp_node_free(int handle,
-		   dsp_node_t *node);
+		struct dsp_node *node);
+
+bool dsp_node_connect(int handle,
+		struct dsp_node *node,
+		unsigned int stream,
+		struct dsp_node *other_node,
+		unsigned int other_stream,
+		struct dsp_stream_attr *attrs,
+		void *params);
 
 bool dsp_node_create(int handle,
-		     dsp_node_t *node);
+		struct dsp_node *node);
 
 bool dsp_node_run(int handle,
-		  dsp_node_t *node);
+		struct dsp_node *node);
 
 bool dsp_node_terminate(int handle,
-			dsp_node_t *node,
-			unsigned long *status);
+		struct dsp_node *node,
+		unsigned long *status);
 
 bool dsp_node_put_message(int handle,
-			  dsp_node_t *node,
-			  const dsp_msg_t *message,
-			  unsigned int timeout);
+		struct dsp_node *node,
+		const struct dsp_msg *message,
+		unsigned int timeout);
 
 bool dsp_node_get_message(int handle,
-			  dsp_node_t *node,
-			  dsp_msg_t *message,
-			  unsigned int timeout);
+		struct dsp_node *node,
+		struct dsp_msg *message,
+		unsigned int timeout);
 
 bool dsp_reserve(int handle,
-		 void *proc_handle,
-		 unsigned long size,
-		 void **addr);
+		void *proc_handle,
+		unsigned long size,
+		void **addr);
 
 bool dsp_unreserve(int handle,
-		   void *proc_handle,
-		   void *addr);
+		void *proc_handle,
+		void *addr);
 
 bool dsp_map(int handle,
-	     void *proc_handle,
-	     void *mpu_addr,
-	     unsigned long size,
-	     void *req_addr,
-	     void *ret_map_addr,
-	     unsigned long attr);
+		void *proc_handle,
+		void *mpu_addr,
+		unsigned long size,
+		void *req_addr,
+		void *ret_map_addr,
+		unsigned long attr);
 
 bool dsp_unmap(int handle,
-	       void *proc_handle,
-	       void *map_addr);
+		void *proc_handle,
+		void *map_addr);
 
 bool dsp_flush(int handle,
-	       void *proc_handle,
-	       void *mpu_addr,
-	       unsigned long size,
-	       unsigned long flags);
+		void *proc_handle,
+		void *mpu_addr,
+		unsigned long size,
+		unsigned long flags);
 
 bool dsp_invalidate(int handle,
-		    void *proc_handle,
-		    void *mpu_addr,
-		    unsigned long size);
+		void *proc_handle,
+		void *mpu_addr,
+		unsigned long size);
 
 bool dsp_register_notify(int handle,
-			 void *proc_handle,
-			 unsigned int event_mask,
-			 unsigned int notify_type,
-			 struct dsp_notification *info);
+		void *proc_handle,
+		unsigned int event_mask,
+		unsigned int notify_type,
+		struct dsp_notification *info);
 
 bool dsp_node_register_notify(int handle,
-			      dsp_node_t *node,
-			      unsigned int event_mask,
-			      unsigned int notify_type,
-			      struct dsp_notification *info);
+		struct dsp_node *node,
+		unsigned int event_mask,
+		unsigned int notify_type,
+		struct dsp_notification *info);
 
 bool dsp_wait_for_events(int handle,
-			 struct dsp_notification **notifications,
-			 unsigned int count,
-			 unsigned int *ret_index,
-			 unsigned int timeout);
+		struct dsp_notification **notifications,
+		unsigned int count,
+		unsigned int *ret_index,
+		unsigned int timeout);
 
 bool dsp_enum(int handle,
-	      unsigned int num,
-	      struct dsp_ndb_props *info,
-	      unsigned int info_size,
-	      unsigned int *ret_num);
+		unsigned int num,
+		struct dsp_ndb_props *info,
+		size_t info_size,
+		unsigned int *ret_num);
 
 bool dsp_register(int handle,
-		  const dsp_uuid_t *uuid,
-		  enum dsp_dcd_object_type type,
-		  const char *path);
+		const struct dsp_uuid *uuid,
+		enum dsp_dcd_object_type type,
+		const char *path);
 
 bool dsp_unregister(int handle,
-		    dsp_uuid_t *uuid,
-		    enum dsp_dcd_object_type type);
+		const struct dsp_uuid *uuid,
+		enum dsp_dcd_object_type type);
 
 bool dsp_proc_get_info(int handle,
-		       void *proc_handle,
-		       enum dsp_resource type,
-		       struct dsp_info *info,
-		       unsigned size);
+		void *proc_handle,
+		enum dsp_resource type,
+		struct dsp_info *info,
+		unsigned size);
 
 static inline bool
 dsp_send_message(int handle,
-		 dsp_node_t *node,
-		 uint32_t cmd,
-		 uint32_t arg_1,
-		 uint32_t arg_2)
+		struct dsp_node *node,
+		uint32_t cmd,
+		uint32_t arg_1,
+		uint32_t arg_2)
 {
-	dsp_msg_t msg;
+	struct dsp_msg msg;
 
 	msg.cmd = cmd;
 	msg.arg_1 = arg_1;
@@ -328,15 +383,59 @@ dsp_send_message(int handle,
 }
 
 bool dsp_node_get_attr(int handle,
-		       dsp_node_t *node,
-		       struct dsp_node_attr *attr,
-		       size_t attr_size);
+		struct dsp_node *node,
+		struct dsp_node_attr *attr,
+		size_t attr_size);
 
 bool dsp_enum_nodes(int handle,
-		    void *proc_handle,
-		    void **node_table,
-		    unsigned node_table_size,
-		    unsigned *num_nodes,
-		    unsigned *allocated);
+		void *proc_handle,
+		void **node_table,
+		unsigned node_table_size,
+		unsigned *num_nodes,
+		unsigned *allocated);
+
+bool dsp_stream_open(int handle,
+		struct dsp_node *node,
+		unsigned int direction,
+		unsigned int index,
+		struct dsp_stream_attr_in *attrin,
+		void *stream);
+
+bool dsp_stream_close(int handle,
+		void *stream);
+
+bool dsp_stream_idle(int handle,
+		void *stream,
+		bool flush);
+
+bool dsp_stream_reclaim(int handle,
+		void *stream,
+		unsigned char **buff,
+		unsigned long *data_size,
+		unsigned long *buff_size,
+		unsigned long *args);
+
+bool dsp_stream_issue(int handle,
+		void *stream,
+		unsigned char *buff,
+		unsigned long data_size,
+		unsigned long buff_size,
+		unsigned long arg);
+
+bool dsp_stream_get_info(int handle,
+		void *stream,
+		struct dsp_stream_info *info,
+		unsigned int size);
+
+bool dsp_stream_allocate_buffers(int handle,
+		void *stream,
+		unsigned int size,
+		unsigned char **buff,
+		unsigned int num_buf);
+
+bool dsp_stream_free_buffers(int handle,
+		void *stream,
+		unsigned char **buff,
+		unsigned int num_buf);
 
 #endif /* DSP_BRIDGE_H */

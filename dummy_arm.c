@@ -42,11 +42,11 @@ signal_handler(int signal)
 	done = true;
 }
 
-static inline dsp_node_t *
+static inline struct dsp_node *
 create_node(void)
 {
-	dsp_node_t *node;
-	const dsp_uuid_t dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
+	struct dsp_node *node;
+	const struct dsp_uuid dummy_uuid = { 0x3dac26d0, 0x6d4b, 0x11dd, 0xad, 0x8b,
 		{ 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66 } };
 
 	if (!dsp_register(dsp_handle, &dummy_uuid, DSP_DCD_LIBRARYTYPE, "/lib/dsp/dummy.dll64P"))
@@ -71,7 +71,7 @@ create_node(void)
 }
 
 static inline bool
-destroy_node(dsp_node_t *node)
+destroy_node(struct dsp_node *node)
 {
 	if (node) {
 		if (!dsp_node_free(dsp_handle, node)) {
@@ -90,7 +90,7 @@ configure_dsp_node(void *node,
 		   dmm_buffer_t *input_buffer,
 		   dmm_buffer_t *output_buffer)
 {
-	dsp_msg_t msg;
+	struct dsp_msg msg;
 
 	msg.cmd = 0;
 	msg.arg_1 = (uint32_t) input_buffer->map;
@@ -99,7 +99,7 @@ configure_dsp_node(void *node,
 }
 
 static bool
-run_task(dsp_node_t *node,
+run_task(struct dsp_node *node,
 	 unsigned long times)
 {
 	unsigned long exit_status;
@@ -128,7 +128,7 @@ run_task(dsp_node_t *node,
 	pr_info("running %lu times", times);
 
 	while (!done) {
-		dsp_msg_t msg;
+		struct dsp_msg msg;
 
 #ifdef FILL_DATA
 		{
@@ -201,7 +201,7 @@ int
 main(int argc,
      const char **argv)
 {
-	dsp_node_t *node;
+	struct dsp_node *node;
 	int ret = 0;
 
 	signal(SIGINT, signal_handler);
